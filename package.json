@@ -1,0 +1,36 @@
+{
+  "name": "orchard",
+  "description": "read-through caching via redis via bluebird",
+  "version": "0.0.0",
+  "author": "AgileMD <hello@agilemd.com>",
+  "contributors": [
+    "agilekurt <kurt@agilemd.com>",
+    "agilemd <doc@agilemd.com>"
+  ],
+  "keywords": [
+    "cache",
+    "redis",
+    "deferred",
+    "promise",
+    "promises-a",
+    "promises-aplus",
+    "read-through"
+  ],
+  "main": "index.js",
+  "scripts": {
+    "test": "node node_modules/mocha/bin/mocha"
+  },
+  "repository": "git@github.com:agilemd/orchard.git",
+  "dependencies": {
+    "ninvoke": "0.1.0",
+    "bluebird": "1.0.1",
+    "redis": "0.10.0",
+    "redisc": "0.2.0"
+  },
+  "devDependencies": {
+    "chai": "1.9.0",
+    "mocha": "1.17.0"
+  },
+  "readmeFilename": "README.md",
+  "license": "MIT"
+}
