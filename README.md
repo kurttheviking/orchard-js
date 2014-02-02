@@ -23,7 +23,7 @@ Instantiate an Orchard instance by passing a valid redis connection URI and, opt
 For example, the minimalist form:
 
 ```
-var cache = new Orchard('redis://localhost')
+var cache = new Orchard('redis://localhost');
 ```
 
 Or, a more realistic form:
@@ -32,7 +32,7 @@ Or, a more realistic form:
 var cache = new Orchard('redis://authcode@192.168.1.1:6379/1', {
 	keyPrefix: 'app-cache',
 	defaultExpires: 60
-})
+});
 ```
 
 
@@ -50,7 +50,7 @@ The URI connection scheme expects the following parameters:
 ### The `options` object
 
 - `keyPrefix`: A string that is preprended to any subsequently cached key. Useful if a single redis database supports caching for multiple services.
-- `defaultExpires`: By default, cached data never expires. Use this option to set a default [TTL](http://redis.io/commands/ttl) for all cached keys. (Key-level expiration always supercedes this default.) The value can be either an `int` represening the number of seconds a key should live, or a duration object. Duration objects accept one or more valid parameters: `days`, `hours`, `minutes`, and/or `seconds`...
+- `defaultExpires`: By default, cached data never expires. Use this option to set a default [TTL](http://redis.io/commands/ttl) for all cached keys. (Key-level expiration always supercedes this default.) The value can be either an `int` represening the number of seconds a key should live, or a duration object. Duration objects should contain one or of `days`, `hours`, `minutes`, and/or `seconds`:
 
 ```
 var cache = new Orchard('redis://authcode@192.168.1.1:6379/1', {
@@ -59,7 +59,7 @@ var cache = new Orchard('redis://authcode@192.168.1.1:6379/1', {
 		days: 14,
 		hours: 2
 	}
-})
+});
 ```
 
 ## API
