@@ -1,7 +1,7 @@
 // var _ = require('lodash');
 var ninvoke = require('ninvoke');
 var Promise = require('bluebird');
-var redisc = require('redisc');
+var redisuri = require('redisuri');
 var redis = require('redis');
 
 
@@ -14,8 +14,14 @@ function Orchard (redisURI, options) {
   }
 
   if (!redisURI  || (typeof redisURI !== 'string')) {
-  	throw new TypeError('new Orchard instance requires a redisURI as the first parameter')
+  	throw new TypeError('Orchard instance requires a redis URI connection string as the first parameter');
   }
+
+  if (!options) {
+  	options = {};
+  }
+
+  options.redis = redisuri.parse(redisuri.validate(redisURI));
 
   if (typeof options === 'number') {
 
