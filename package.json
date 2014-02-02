@@ -25,7 +25,7 @@
     "ninvoke": "0.1.0",
     "bluebird": "1.0.1",
     "redis": "0.10.0",
-    "redisc": "0.2.0"
+    "redisuri": "1.0.0"
   },
   "devDependencies": {
     "chai": "1.9.0",
