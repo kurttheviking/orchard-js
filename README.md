@@ -50,8 +50,7 @@ The URI connection scheme expects the following parameters:
 ### The `options` object
 
 - `keyPrefix`: A string that is preprended to any subsequently cached key. Useful if a single redis database supports caching for multiple services.
-- `defaultExpires`: By default, cached data never expires. Use this option to set a default [TTL](http://redis.io/commands/ttl) for all cached keys. Key-level expiration, if provided, always supercedes the default. The value provided to this option can either be an `int` represening the number of seconds a key should live, or a duration object. Duration objects accept 1 or more valid parameters (`days`, `hours`, `minutes`, and/or `seconds`), for example:
-
+- `defaultExpires`: By default, cached data never expires. Use this option to set a default [TTL](http://redis.io/commands/ttl) for all cached keys. (Key-level expiration always supercedes this default.) The value can be either an `int` represening the number of seconds a key should live, or a duration object. Duration objects accept one or more valid parameters: `days`, `hours`, `minutes`, and/or `seconds`...
 
 ```
 {
