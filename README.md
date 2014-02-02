@@ -30,8 +30,8 @@ Or, a more realistic form:
 
 ```
 var cache = new Orchard('redis://authcode@192.168.1.1:6379/1', {
-	keyPrefix: 'main-cache',
-	defaultExpires: 1
+	keyPrefix: 'app-cache',
+	defaultExpires: 60
 })
 ```
 
@@ -53,10 +53,13 @@ The URI connection scheme expects the following parameters:
 - `defaultExpires`: By default, cached data never expires. Use this option to set a default [TTL](http://redis.io/commands/ttl) for all cached keys. (Key-level expiration always supercedes this default.) The value can be either an `int` represening the number of seconds a key should live, or a duration object. Duration objects accept one or more valid parameters: `days`, `hours`, `minutes`, and/or `seconds`...
 
 ```
-{
-	days: 14,
-	hours: 2,
-}
+var cache = new Orchard('redis://authcode@192.168.1.1:6379/1', {
+	keyPrefix: 'app-cache',
+	defaultExpires: {
+		days: 14,
+		hours: 2
+	}
+})
 ```
 
 ## API
