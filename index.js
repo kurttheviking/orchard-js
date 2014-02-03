@@ -4,15 +4,14 @@
 var ninvoke = require('ninvoke');
 var Promise = require('bluebird');
 var redisuri = require('redisuri');
-var redis = require('redis');
 
 var KEY_SEPARATOR = ':';
 
 
-function _connectRedis (redisURI) {
-  var conf = redisuri.parse(redisuri.validate(redisURI));
-  // redis = redis || require('redis')  // TODO: for testing?
+function _connectRedis (redisURI, redis) {
+  redis = redis || require('redis');
 
+  var conf = redisuri.parse(redisuri.validate(redisURI));
   var client = redis.createClient(conf.port, conf.host, {
     auth_pass: conf.auth
   });
@@ -73,7 +72,7 @@ function Orchard (redisURI, options) {
   self._keyPrefix = options.keyPrefix ? String(options.keyPrefix) + KEY_SEPARATOR : '';
   self._scanCount = options.scanCount ? parseInt(options.scanCount, 10) : null;
 
-  self._redis = _connectRedis(self._redisURI);
+  self._redis = _connectRedis(self._redisURI, options.redis);
   self._redis.on('error', function (err) {
     throw err;
   });
@@ -117,26 +116,60 @@ function Orchard (redisURI, options) {
   return cache;
 }
 
-
 Orchard.prototype.prune = function (keyPattern) {
-  var _key = _parsePromisedKey(keyPattern);
+  var self = this;
+
+  return _parsePromisedKey(keyPattern)
+    .then(function (key) {
+      return self._redis.del(key);
+    });
 };
 
 Orchard.prototype.prunePattern = function (keyPattern) {
-  var _key = _parsePromisedKey(keyPattern);
+  var self = this;
+
+  function _scanAndDelete (cursor, removedCt, iterationCommands) {
+    // [KE] ensure the current cursor is the first element of the command array
+    //       without modifying the source command array
+    var cmds = iterationCommands.slice(0).unshift(cursor);
+
+    return ninvoke(self._redis, 'scan', cmds)
+      .then(function (result) {
+        var cursorNew = parseInt(result[0], 10);
+        var keys = result[1] || [];
+
+        return Promise.all(keys.map(function (k) {
+          return self._redis.del(k);
+        })).then(function (counts) {
+          removedCt += counts.reduce(function (previousValue, currentValue) { return previousValue + currentValue; }, 0);
+
+          // [KE] per redis, cursor returns to 0 once it has fully iterated through the keyspace
+          if (cursorNew === 0) {
+            return removedCt;
+          }
+
+          return _scanAndDelete(cursorNew, removedCt, iterationCommands);
+        });
+
+      });
+  }
+
+  return _parsePromisedKey(keyPattern)
+    .then(function (key) {
+      var cmds = ['MATCH', key];
+
+      if (self._scanCount) {
+        cmds.push('COUNT');
+        cmds.push(self._scanCount);
+      }
+
+      // _scanAndDelete(cursor, removedCt, iterationCommands)
+      return _scanAndDelete(0, 0, cmds);
+    });
 };
 
 // sugar
 Orchard.prototype.evict = Orchard.prototype.prune;
 Orchard.prototype.evictPattern = Orchard.prototype.prunePattern;
-
-// // classy, since V8 prefers predictable objects.
-// function Entry (key, value, lu, length, now) {
-//   this.key = key
-//   this.value = value
-//   this.lu = lu
-//   this.length = length
-//   this.now = now
-// }
 
 module.exports = Orchard;
