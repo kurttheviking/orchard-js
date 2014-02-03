@@ -38,7 +38,7 @@ var cache = new Orchard('redis://authcode@192.168.1.1:6379/1', {
 
 - `keyPrefix`: A string that is preprended to any subseuqently used key. Useful if a single redis database supports caching for multiple services.
 - `defaultExpires`: By default, cached data never expires. Use this option to set a default [TTL](http://redis.io/commands/ttl) for all cached keys. (Key-level expiration always supercedes this default.) The value can be either an `Number` represening the number of seconds a key should live, or a duration object. Duration objects should contain one or more of `days`, `hours`, `minutes`, and `seconds` parameters.
-- `scanCount`: A `Number` that hints redis' `SCAN` command (e.g. within `evictPattern` described below). Defaults to 10, per redis.
+- `scanCount`: A `Number` that hints redis' `SCAN` command (e.g. within `prunePattern` described below). Defaults to 10, per redis.
 
 ```
 var cache = new Orchard('redis://authcode@192.168.1.1:6379/1', {
@@ -118,36 +118,38 @@ var data = cache({
 };
 ```
 
-### Removing data
+### Evicting data
 
-Orchard provides two methods to remove data from the cache prior to natural expiration.
+Orchard provides two methods for removing data from the cache prior to natural expiration.
 
-**cache.evict(key || keyConfigurationArray)**
 
-`evict` will attempt to [DEL](http://redis.io/commands/del) a key from the cache. Alternatively, `evict` accepts a key configuration array (as described above, where each element is resolved then concatenated using `:`).
+**cache.prune(key || keyConfigurationArray)**
 
-`evict` returns a promise which resolves to the number of keys removed (1, in the standard use case).
+`prune` will attempt to [DEL](http://redis.io/commands/del) a key from the cache. Alternatively, `prune` accepts a key configuration array (as described above, where each element is resolved then concatenated using `:`).
+
+`prune` returns a promise which resolves to the number of keys evicted (1, in the standard use case).
 
 ```
-cache.evict('jaeger:mark iv');
+cache.prune('jaeger:mark iv');
 
-cache.evict([
+cache.prune([
     'jaeger',
     req.params.markId,
     Promise.resolve(d.getDay())
 ]);
 ```
 
-**cache.evictPattern(keyPattern || keyConfigurationArray)**
 
-`evictPattern` is used to delete all keys matching a valid redis key pattern. This method uses [SCAN](http://redis.io/commands/scan) to iterate over all keys without the risk of the long-lived blocking action caused by the `KEYS` command. The key or key configuration array is used within the `MATCH` option and `COUNT` uses the redis default or, if specified at instantiation, Orchard's `scanCount`. All matching keys are removed with [DEL](http://redis.io/commands/del).
+**cache.prunePattern(keyPattern || keyConfigurationArray)**
 
-`evictPattern` returns a promise that resolves to the number of keys removed.
+`prunePattern` is used to delete all keys matching a valid redis key pattern. This method uses [SCAN](http://redis.io/commands/scan) to iterate over all keys without the risk of the long-lived blocking action caused by the `KEYS` command. The key or key configuration array is used within the `MATCH` option and `COUNT` uses the redis default or, if specified at instantiation, Orchard's `scanCount`. All matching keys are removed with [DEL](http://redis.io/commands/del).
+
+`prunePattern` returns a promise that resolves to the number of keys evicted.
 
 ```
-cache.evictPattern('jaeger:*');
+cache.prunePattern('jaeger:*');
 
-cache.evictPattern([
+cache.prunePattern([
     'jaeger',
     req.params.markId,
     '*'
@@ -155,6 +157,11 @@ cache.evictPattern([
 ```
 
 Note: If you are not familiar with `SCAN`, the [redis documentation](http://redis.io/commands/scan) provides a thorough discussion about various state concerns.
+
+
+**evict() and evictPatten()**
+
+If you prefer to avoid the idiomatically-named eviction methods, Orchard also provides `evict` (which aliases `prune`) and `evictPattern` (which aliases `prunePattern`).
 
 
 ## Contribute
