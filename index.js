@@ -1,260 +1,142 @@
-// var _ = require('lodash');
+/*jslint node: true */
+'use strict';
+
 var ninvoke = require('ninvoke');
 var Promise = require('bluebird');
 var redisuri = require('redisuri');
 var redis = require('redis');
 
+var KEY_SEPARATOR = ':';
 
-module.exports = Orchard;
+
+function _connectRedis (redisURI) {
+  var conf = redisuri.parse(redisuri.validate(redisURI));
+  // redis = redis || require('redis')  // TODO: for testing?
+
+  var client = redis.createClient(conf.port, conf.host, {
+    auth_pass: conf.auth
+  });
+
+  client.select(conf.db);
+
+  return client;
+}
+
+function _parseDuration (duration) {
+  var parsed = duration;
+
+  if (typeof duration === 'object') {
+    parsed = 0;
+    parsed += duration.days ? duration.days * 86400 : 0;
+    parsed += duration.hours ? duration.hours * 3600 : 0;
+    parsed += duration.minutes ? duration.minutes * 60 : 0;
+    parsed += duration.seconds ? duration.seconds : 0;
+  }
+
+  return parseInt(parsed, 10);
+}
+
+function _parsePromisedKey (key) {
+  return new Promise.resolve(key).then(function (_key) {
+    if (Array.isArray(_key)) {
+      return Promise.all(_key.map(Promise.resolve)).then(function (_keys) {
+        return _keys.join(KEY_SEPARATOR);
+      });
+    }
+    else if (typeof _key === 'object') {
+      return JSON.stringify(_key);
+    }
+
+    return String(key);
+  });
+}
 
 
 function Orchard (redisURI, options) {
-  if (!(this instanceof Orchard)) {
+  var self = this;  // reduces .bind(this) complications below...
+
+  if (!(self instanceof Orchard)) {
     return new Orchard(redisURI, options);
   }
 
   if (!redisURI  || (typeof redisURI !== 'string')) {
-  	throw new TypeError('Orchard instance requires a redis URI connection string as the first parameter');
+    throw new TypeError('Orchard instance requires a redis URI connection string as the first parameter');
   }
+
+  self._redisURI = redisURI;
 
   if (!options) {
-  	options = {};
+    options = {};
   }
 
-  options.redis = redisuri.parse(redisuri.validate(redisURI));
+  self._defaultTTL = options.defaultExpires ? _parseDuration(options.defaultExpires) : null;
+  self._keyPrefix = options.keyPrefix ? String(options.keyPrefix) + KEY_SEPARATOR : '';
+  self._scanCount = options.scanCount ? parseInt(options.scanCount, 10) : null;
 
-  if (typeof options === 'number') {
+  self._redis = _connectRedis(self._redisURI);
+  self._redis.on('error', function (err) {
+    throw err;
+  });
 
-  }
-    options = { max: options }
+  function cache (config, dataFn) {
+    var ttl = config.expires ? _parseDuration(config.expires) : self._defaultTTL;
+    var forceUpdate = !!config.forceUpdate;
 
-  if (!options)
-    options = {}
+    return _parsePromisedKey(config.key || config)
+      .then(function (key) {
+        key = self._keyPrefix + key;
 
-  this._max = options.max
-  // Kind of weird to have a default max of Infinity, but oh well.
-  if (!this._max || !(typeof this._max === "number") || this._max <= 0 )
-    this._max = Infinity
+        var readThrough = function () {
+          return dataFn()
+            .then(function (raw) {
+              self._redis.set(key, JSON.stringify(raw));
 
-  this._lengthCalculator = options.length || naiveLength
-  if (typeof this._lengthCalculator !== "function")
-    this._lengthCalculator = naiveLength
+              if (ttl) {
+                self._redis.expire(key, ttl);
+              }
 
-  this._allowStale = options.stale || false
-  this._maxAge = options.maxAge || null
-  this._dispose = options.dispose
-  this.reset()
-}
+              return raw;
+            });
+        };
 
-// resize the cache when the max changes.
-Object.defineProperty(LRUCache.prototype, "max",
-  { set : function (mL) {
-      if (!mL || !(typeof mL === "number") || mL <= 0 ) mL = Infinity
-      this._max = mL
-      if (this._length > this._max) trim(this)
-    }
-  , get : function () { return this._max }
-  , enumerable : true
-  })
-
-// resize the cache when the lengthCalculator changes.
-Object.defineProperty(LRUCache.prototype, "lengthCalculator",
-  { set : function (lC) {
-      if (typeof lC !== "function") {
-        this._lengthCalculator = naiveLength
-        this._length = this._itemCount
-        for (var key in this._cache) {
-          this._cache[key].length = 1
+        if (forceUpdate) {
+          return readThrough();
         }
-      } else {
-        this._lengthCalculator = lC
-        this._length = 0
-        for (var key in this._cache) {
-          this._cache[key].length = this._lengthCalculator(this._cache[key].value)
-          this._length += this._cache[key].length
-        }
-      }
 
-      if (this._length > this._max) trim(this)
-    }
-  , get : function () { return this._lengthCalculator }
-  , enumerable : true
-  })
+        return ninvoke(self._redis, 'get', key)
+          .then(function (data) {
+            if (data) {
+              return JSON.parse(data);
+            }
 
-Object.defineProperty(LRUCache.prototype, "length",
-  { get : function () { return this._length }
-  , enumerable : true
-  })
-
-
-Object.defineProperty(LRUCache.prototype, "itemCount",
-  { get : function () { return this._itemCount }
-  , enumerable : true
-  })
-
-LRUCache.prototype.forEach = function (fn, thisp) {
-  thisp = thisp || this
-  var i = 0;
-  for (var k = this._mru - 1; k >= 0 && i < this._itemCount; k--) if (this._lruList[k]) {
-    i++
-    var hit = this._lruList[k]
-    if (this._maxAge && (Date.now() - hit.now > this._maxAge)) {
-      del(this, hit)
-      if (!this._allowStale) hit = undefined
-    }
-    if (hit) {
-      fn.call(thisp, hit.value, hit.key, this)
-    }
-  }
-}
-
-LRUCache.prototype.keys = function () {
-  var keys = new Array(this._itemCount)
-  var i = 0
-  for (var k = this._mru - 1; k >= 0 && i < this._itemCount; k--) if (this._lruList[k]) {
-    var hit = this._lruList[k]
-    keys[i++] = hit.key
-  }
-  return keys
-}
-
-LRUCache.prototype.values = function () {
-  var values = new Array(this._itemCount)
-  var i = 0
-  for (var k = this._mru - 1; k >= 0 && i < this._itemCount; k--) if (this._lruList[k]) {
-    var hit = this._lruList[k]
-    values[i++] = hit.value
-  }
-  return values
-}
-
-LRUCache.prototype.reset = function () {
-  if (this._dispose && this._cache) {
-    for (var k in this._cache) {
-      this._dispose(k, this._cache[k].value)
-    }
+            return readThrough();
+          });
+      });
   }
 
-  this._cache = Object.create(null) // hash of items by key
-  this._lruList = Object.create(null) // list of items in order of use recency
-  this._mru = 0 // most recently used
-  this._lru = 0 // least recently used
-  this._length = 0 // number of items in the list
-  this._itemCount = 0
+  return cache;
 }
 
-// Provided for debugging/dev purposes only. No promises whatsoever that
-// this API stays stable.
-LRUCache.prototype.dump = function () {
-  return this._cache
-}
 
-LRUCache.prototype.dumpLru = function () {
-  return this._lruList
-}
+Orchard.prototype.prune = function (keyPattern) {
+  var _key = _parsePromisedKey(keyPattern);
+};
 
-LRUCache.prototype.set = function (key, value) {
-  if (hOP(this._cache, key)) {
-    // dispose of the old one before overwriting
-    if (this._dispose) this._dispose(key, this._cache[key].value)
-    if (this._maxAge) this._cache[key].now = Date.now()
-    this._cache[key].value = value
-    this.get(key)
-    return true
-  }
+Orchard.prototype.prunePattern = function (keyPattern) {
+  var _key = _parsePromisedKey(keyPattern);
+};
 
-  var len = this._lengthCalculator(value)
-  var age = this._maxAge ? Date.now() : 0
-  var hit = new Entry(key, value, this._mru++, len, age)
+// sugar
+Orchard.prototype.evict = Orchard.prototype.prune;
+Orchard.prototype.evictPattern = Orchard.prototype.prunePattern;
 
-  // oversized objects fall out of cache automatically.
-  if (hit.length > this._max) {
-    if (this._dispose) this._dispose(key, value)
-    return false
-  }
+// // classy, since V8 prefers predictable objects.
+// function Entry (key, value, lu, length, now) {
+//   this.key = key
+//   this.value = value
+//   this.lu = lu
+//   this.length = length
+//   this.now = now
+// }
 
-  this._length += hit.length
-  this._lruList[hit.lu] = this._cache[key] = hit
-  this._itemCount ++
-
-  if (this._length > this._max) trim(this)
-  return true
-}
-
-LRUCache.prototype.has = function (key) {
-  if (!hOP(this._cache, key)) return false
-  var hit = this._cache[key]
-  if (this._maxAge && (Date.now() - hit.now > this._maxAge)) {
-    return false
-  }
-  return true
-}
-
-LRUCache.prototype.get = function (key) {
-  return get(this, key, true)
-}
-
-LRUCache.prototype.peek = function (key) {
-  return get(this, key, false)
-}
-
-LRUCache.prototype.pop = function () {
-  var hit = this._lruList[this._lru]
-  del(this, hit)
-  return hit || null
-}
-
-LRUCache.prototype.del = function (key) {
-  del(this, this._cache[key])
-}
-
-function get (self, key, doUse) {
-  var hit = self._cache[key]
-  if (hit) {
-    if (self._maxAge && (Date.now() - hit.now > self._maxAge)) {
-      del(self, hit)
-      if (!self._allowStale) hit = undefined
-    } else {
-      if (doUse) use(self, hit)
-    }
-    if (hit) hit = hit.value
-  }
-  return hit
-}
-
-function use (self, hit) {
-  shiftLU(self, hit)
-  hit.lu = self._mru ++
-  self._lruList[hit.lu] = hit
-}
-
-function trim (self) {
-  while (self._lru < self._mru && self._length > self._max)
-    del(self, self._lruList[self._lru])
-}
-
-function shiftLU (self, hit) {
-  delete self._lruList[ hit.lu ]
-  while (self._lru < self._mru && !self._lruList[self._lru]) self._lru ++
-}
-
-function del (self, hit) {
-  if (hit) {
-    if (self._dispose) self._dispose(hit.key, hit.value)
-    self._length -= hit.length
-    self._itemCount --
-    delete self._cache[ hit.key ]
-    shiftLU(self, hit)
-  }
-}
-
-// classy, since V8 prefers predictable objects.
-function Entry (key, value, lu, length, now) {
-  this.key = key
-  this.value = value
-  this.lu = lu
-  this.length = length
-  this.now = now
-}
-
-})()
+module.exports = Orchard;
