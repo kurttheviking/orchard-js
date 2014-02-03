@@ -99,7 +99,7 @@ var data = cache({
 
 **Complex case**
 
-The `key` property of the key configuration object can also be an `Array` of `String`s, `Number`s, and Promises. Each element of the key array is resolved, then concatenated using `:` as a delimiter (e.g. `jaeger:iv:7`). Note that if `keyPrefix` was provided during instantiation, it is similarly added to the key string (`app-cache:jaeger:iv:7`). 
+The `key` property of the key configuration object can also be an `Array` of `String`, `Numbers`, and Promises. Each element of the key array is resolved, then concatenated with `:` (e.g. `jaeger:iv:7`). Note that if `keyPrefix` was provided during instantiation, it is similarly added to the key string (`app-cache:jaeger:iv:7`). 
 
 In addition key-level `expires` can be a duration object containing one or more of `days`, `hours`, `minutes`, and `seconds` parameters -- exactly the same mechanics as `defaultExpires` described earlier.
 
