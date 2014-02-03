@@ -78,7 +78,11 @@ data.then(function (cacheValue) {
 
 **Intermediate case**
 
-Rather than a string key, Orchard also accepts a key configuration object. The key configuration object must contain a `key` property and, optionally, an `expires` parameter and/or a `forceUpdate` parameter. `expires` is an `Number` representing seconds the cached data should live; `expires` overrides the `defaultExpires` set when Orchard was instantiated. `forceUpdate` causes Orchard to execute the "getter" function regardless of what is currently in the cache and sets the data for future use, overriding any pre-existing data for that key; `forceUpdate` defaults to `false`.
+Rather than a string key, Orchard also accepts a key configuration object. The key configuration object must contain a `key` property and, optionally, an `expires` parameter and/or a `forceUpdate` parameter. 
+
+`expires` is an `Number` representing seconds the cached data should live; `expires` overrides the `defaultExpires` set when Orchard was instantiated. 
+
+`forceUpdate` causes Orchard to execute the "getter" function regardless of what is currently in the cache and sets the data for future use, overriding any pre-existing data for that key; `forceUpdate` defaults to `false`.
 
 ```
 var cache = new Orchard('redis://localhost');
@@ -95,7 +99,9 @@ var data = cache({
 
 **Complex case**
 
-The `key` property of the key configuration object can also be an `Array` of `String`s, `Number`s, and Promises. Each element of the key array is resolved, then concatenated using `:` as a delimiter (e.g. `jaeger:iv:7`). Note that if `keyPrefix` was provided during instantiation, it is similarly added to the key string (`app-cache:jaeger:iv:7`). In addition, as with `defaultExpires` described earlier, key-level `expires` can be a duration object containing one or more of `days`, `hours`, `minutes`, and `seconds` parameters.
+The `key` property of the key configuration object can also be an `Array` of `String`s, `Number`s, and Promises. Each element of the key array is resolved, then concatenated using `:` as a delimiter (e.g. `jaeger:iv:7`). Note that if `keyPrefix` was provided during instantiation, it is similarly added to the key string (`app-cache:jaeger:iv:7`). 
+
+In addition key-level `expires` can be a duration object containing one or more of `days`, `hours`, `minutes`, and `seconds` parameters -- exactly the same mechanics as `defaultExpires` described earlier.
 
 ```
 var cache = new Orchard('redis://localhost');
