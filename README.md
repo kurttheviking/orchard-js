@@ -191,4 +191,6 @@ PRs are welcome! For bugs, please include a failing test which passes when your 
 
 ## Orchard?
 
-...
+Originally, this project was named "redcache" -- a nice contrast to our in-memory caching layer [bluecache](https://github.com/agilemd/bluecache). Unforunately, that project name was claimed on npm (by another redis-related project, unsurprisingly) so instead we turned our attention to things that are red.
+
+"rubycache" confuses languages and "bloodcache" sounds like a bad sequel to a [SAW](http://www.imdb.com/title/tt0387564) movie or a decent prequel to a [Blade](http://www.imdb.com/title/tt0120611/) movie. In any case, we eventually found apples which conveniently grow in an orchard. And there you have it: Orchard, a place to grow, prune, and pick data -- fresh from the source.
