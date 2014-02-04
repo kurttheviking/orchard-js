@@ -174,8 +174,8 @@ If you prefer to avoid the idiomatically-named eviction methods, Orchard also pr
 
 Orchard provides two-levels of test coverage.
 
-- `npm run test-unit`: run unit tests against a minimally mocked redis object; this can be run on a machine that does not have redis installed
-- `npm run test-integrated`: run integrated unit tests against an db0 of a redis database exposed to `localhost:6379` (no authentication)
+1. `npm run test-unit`: run unit tests against a minimally mocked redis object; this can be run on a machine that does not have redis installed
+2. `npm run test-integrated`: run integrated unit tests against `db0` of a redis database on `localhost:6379` (no authentication)
 
 To run all tests (unit and integrated):
 
