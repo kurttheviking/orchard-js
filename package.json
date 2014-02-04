@@ -18,7 +18,9 @@
   ],
   "main": "index.js",
   "scripts": {
-    "test": "node node_modules/mocha/bin/mocha"
+    "test": "npm run test-unit && npm run test-itegrated",
+    "test-unit": "node node_modules/mocha/bin/mocha ./test/unit",
+    "test-itegrated": "node node_modules/mocha/bin/mocha ./test/integrated"
   },
   "repository": "git@github.com:agilemd/orchard.git",
   "dependencies": {
@@ -29,7 +31,9 @@
   },
   "devDependencies": {
     "chai": "1.9.0",
-    "mocha": "1.17.0"
+    "mocha": "1.17.0",
+    "sinon": "1.8.1",
+    "sinon-chai": "2.5.0"
   },
   "readmeFilename": "README.md",
   "license": "MIT"

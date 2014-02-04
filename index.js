@@ -52,7 +52,7 @@ function _parsePromisedKey (key) {
 
 
 function Orchard (redisURI, options) {
-  var self = this;  // reduces .bind(this) complications below...
+  var self = this;  // [KE] provide scope clarity; reduces .bind(this) complications...
 
   if (!(self instanceof Orchard)) {
     return new Orchard(redisURI, options);
@@ -72,7 +72,8 @@ function Orchard (redisURI, options) {
   self._keyPrefix = options.keyPrefix ? String(options.keyPrefix) + KEY_SEPARATOR : '';
   self._scanCount = options.scanCount ? parseInt(options.scanCount, 10) : null;
 
-  self._redis = _connectRedis(self._redisURI, options.redis);
+  self._redis = _connectRedis(self._redisURI, options._redis);
+
   self._redis.on('error', function (err) {
     throw err;
   });
@@ -113,63 +114,77 @@ function Orchard (redisURI, options) {
       });
   }
 
-  return cache;
-}
+  cache.prune = function (keyPattern) {
+    var self = this;
 
-Orchard.prototype.prune = function (keyPattern) {
-  var self = this;
+    return _parsePromisedKey(keyPattern)
+      .then(function (key) {
+        key = self._keyPrefix + key;
 
-  return _parsePromisedKey(keyPattern)
-    .then(function (key) {
-      return self._redis.del(key);
-    });
-};
-
-Orchard.prototype.prunePattern = function (keyPattern) {
-  var self = this;
-
-  function _scanAndDelete (cursor, removedCt, iterationCommands) {
-    // [KE] ensure the current cursor is the first element of the command array
-    //       without modifying the source command array
-    var cmds = iterationCommands.slice(0).unshift(cursor);
-
-    return ninvoke(self._redis, 'scan', cmds)
-      .then(function (result) {
-        var cursorNew = parseInt(result[0], 10);
-        var keys = result[1] || [];
-
-        return Promise.all(keys.map(function (k) {
-          return self._redis.del(k);
-        })).then(function (counts) {
-          removedCt += counts.reduce(function (previousValue, currentValue) { return previousValue + currentValue; }, 0);
-
-          // [KE] per redis, cursor returns to 0 once it has fully iterated through the keyspace
-          if (cursorNew === 0) {
-            return removedCt;
-          }
-
-          return _scanAndDelete(cursorNew, removedCt, iterationCommands);
-        });
-
+        return self._redis.del(key);
       });
+  };
+
+  cache.prunePattern = function (keyPattern) {
+    var self = this;
+
+    function _scanAndDelete (cursor, removedCt, iterationCommands) {
+      // [KE] ensure the current cursor is the first element of the command array
+      //       without modifying the source command array
+      var cmds = iterationCommands.slice(0).unshift(cursor);
+
+      return ninvoke(self._redis, 'scan', cmds)
+        .then(function (result) {
+          var cursorNew = parseInt(result[0], 10);
+          var keys = result[1] || [];
+
+          return Promise.all(keys.map(function (k) {
+            return self._redis.del(k);
+          })).then(function (counts) {
+            removedCt += counts.reduce(function (previousValue, currentValue) { return previousValue + currentValue; }, 0);
+
+            // [KE] per redis, cursor returns to 0 once it has fully iterated through the keyspace
+            if (cursorNew === 0) {
+              return removedCt;
+            }
+
+            return _scanAndDelete(cursorNew, removedCt, iterationCommands);
+          });
+
+        });
+    }
+
+    return _parsePromisedKey(keyPattern)
+      .then(function (key) {
+        key = self._keyPrefix + key;
+
+        var cmds = ['MATCH', key];
+
+        if (self._scanCount) {
+          cmds.push('COUNT');
+          cmds.push(self._scanCount);
+        }
+
+        // _scanAndDelete(cursor, removedCt, iterationCommands)
+        return _scanAndDelete(0, 0, cmds);
+      });
+  };
+
+  // sugar
+  cache.evict = cache.prune;
+  cache.evictPattern = cache.prunePattern;
+
+  // [KE] eventually, this should expost other logging functionality
+  if (options._debug) {
+    cache._redis = self._redis;
+    cache._defaultTTL = self._defaultTTL;
+    cache._keyPrefix = self._keyPrefix;
+    cache._parseDuration = _parseDuration;
+    cache._parsePromisedKey = _parsePromisedKey;
+    cache._scanCount = self._scanCount;
   }
 
-  return _parsePromisedKey(keyPattern)
-    .then(function (key) {
-      var cmds = ['MATCH', key];
-
-      if (self._scanCount) {
-        cmds.push('COUNT');
-        cmds.push(self._scanCount);
-      }
-
-      // _scanAndDelete(cursor, removedCt, iterationCommands)
-      return _scanAndDelete(0, 0, cmds);
-    });
-};
-
-// sugar
-Orchard.prototype.evict = Orchard.prototype.prune;
-Orchard.prototype.evictPattern = Orchard.prototype.prunePattern;
+  return cache;
+}
 
 module.exports = Orchard;

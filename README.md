@@ -66,11 +66,11 @@ In this case, an explicit cache key is used and a simple function returns a Prom
 var cache = new Orchard('redis://localhost');
 var Promise = require('bluebird');
 
-var data = cache('jaeger', function () {
+var promisedData = cache('jaeger', function () {
     return Promise.resolve('echo saber');
 };
 
-data.then(function (cacheValue) {
+promisedData.then(function (cacheValue) {
     console.log('cacheValue =>', cacheValue); 
 });
 ```
@@ -88,7 +88,7 @@ Rather than a string key, Orchard also accepts a key configuration object. The k
 var cache = new Orchard('redis://localhost');
 var Promise = require('bluebird');
 
-var data = cache({
+var promisedData = cache({
     key: 'jaeger:mark iv',
     expires: 3600,
     forceUpdate: false
@@ -108,7 +108,7 @@ var cache = new Orchard('redis://localhost');
 var Promise = require('bluebird');
 var today = new Date();
 
-var data = cache({
+var promisedData = cache({
     key: [
         'jaeger',
         req.params.markId,
@@ -168,6 +168,20 @@ Note: If you are not familiar with `SCAN`, the [redis documentation](http://redi
 **evict() and evictPatten()**
 
 If you prefer to avoid the idiomatically-named eviction methods, Orchard also provides `evict` (which aliases `prune`) and `evictPattern` (which aliases `prunePattern`).
+
+
+## Tests
+
+Orchard provides two-levels of test coverage.
+
+- `npm run test-unit`: run unit tests against a minimally mocked redis object; this can be run on a machine that does not have redis installed
+- `npm run test-integrated`: run integrated unit tests against an db0 of a redis database exposed to `localhost:6379` (no authentication)
+
+To run all tests (unit and integrated):
+
+```
+npm test
+```
 
 
 ## Contribute
