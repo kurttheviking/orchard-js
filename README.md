@@ -53,7 +53,7 @@ var cache = new Orchard('redis://authcode@192.168.1.1:6379/1', {
 
 ## API
 
-Orchard's is optimized for cases where "in-line" cache declarations are desirable. There is no logical separation between "getting" and "setting" activities. Instead, under a [read-through paradigm](https://www.google.com/search?q=read-through+vs+write-throgh+cache), "setting" occurs on any cache miss (unless `forceUpdate` is passed) using the "getter" function. In the case of Orchard, the "getter" should be a [Promise](https://github.com/promises-aplus/promises-spec)-returning function. Failure to provide a "getter" function will cause Orchard to immediately throw a `TypeError`.
+Orchard is optimized for cases where "in-line" cache declarations are desirable -- the logical distinction between "getting" and "setting" activities is minimized. Instead, under a [read-through paradigm](https://www.google.com/search?q=read-through+vs+write-through+cache), "setting" occurs on any cache miss (unless `forceUpdate` is passed) using the data "getter" function. In the case of Orchard, the "getter" should be a [Promise](https://github.com/promises-aplus/promises-spec)-returning function. Failure to provide a "getter" will cause Orchard to immediately throw a `TypeError`.
 
 
 ### Getting & setting data
@@ -99,9 +99,9 @@ var promisedData = cache({
 
 **Complex case**
 
-The `key` property of the key configuration object can also be an `Array` of `String`, `Numbers`, and Promises. Each element of the key array is resolved, then concatenated with `:` (e.g. `jaeger:iv:7`). Note that if `keyPrefix` was provided during instantiation, it is similarly added to the key string (`app-cache:jaeger:iv:7`). 
+The `key` property of the key configuration object can also be an `Array` of `String`, `Numbers`, and Promises. Each element of the key array is resolved, then concatenated with a semicolon (e.g. `jaeger:iv:7`). If `keyPrefix` was provided during Orchard instantiation, it is similarly added to the key string (e.g. `app-cache:jaeger:iv:7`). 
 
-In addition key-level `expires` can be a duration object containing one or more of `days`, `hours`, `minutes`, and `seconds` parameters -- exactly the same mechanics as `defaultExpires` described earlier.
+In addition, key-level `expires` can be a duration object containing one or more of `days`, `hours`, `minutes`, and `seconds` parameters -- exactly the same mechanics as `defaultExpires` described earlier.
 
 ```
 var cache = new Orchard('redis://localhost');
@@ -131,7 +131,7 @@ Orchard provides two methods for removing data from the cache prior to natural e
 
 **cache.prune(key || keyConfigurationArray)**
 
-`prune` will attempt to [DEL](http://redis.io/commands/del) a key from the cache. Alternatively, `prune` accepts a key configuration array (as described above, where each element is resolved then concatenated using `:`).
+`prune` will attempt to [DEL](http://redis.io/commands/del) a key from the cache. Alternatively, `prune` accepts a key configuration array (as described above).
 
 `prune` returns a promise which resolves to the number of keys evicted (1, in the standard use case).
 
@@ -148,7 +148,7 @@ cache.prune([
 
 **cache.prunePattern(keyPattern || keyConfigurationArray)**
 
-`prunePattern` is used to delete all keys matching a valid redis key pattern. This method uses [SCAN](http://redis.io/commands/scan) to iterate over all keys without the risk of the long-lived blocking action caused by the `KEYS` command. The key or key configuration array is used within the `MATCH` option and `COUNT` uses the redis default or, if specified at instantiation, Orchard's `scanCount`. All matching keys are removed with [DEL](http://redis.io/commands/del).
+`prunePattern` is used to delete all keys matching a valid redis key pattern. This method uses [SCAN](http://redis.io/commands/scan) to iterate over all keys while minimizing blocking actions. The key or key configuration array is used within redis' `MATCH` option while `COUNT` uses either the redis default or `scanCount`, if specified at instantiation. All matching keys are removed with [DEL](http://redis.io/commands/del).
 
 `prunePattern` returns a promise that resolves to the number of keys evicted.
 
@@ -193,4 +193,4 @@ PRs are welcome! For bugs, please include a failing test which passes when your 
 
 Originally, this project was named "redcache" -- a nice contrast to our in-memory caching layer [bluecache](https://github.com/agilemd/bluecache). Unfortunately, that project name was already claimed on npm (by another redis-related project, unsurprisingly) so instead we turned our attention to things that are red.
 
-"rubycache" confuses languages and "bloodcache" sounds like a bad sequel to a [SAW](http://www.imdb.com/title/tt0387564) movie or a decent prequel to a [Blade](http://www.imdb.com/title/tt0120611/) movie. In any case, we eventually found apples which conveniently grow in an orchard. And there you have it: Orchard, a place to grow, prune, and pick data -- fresh from the source.
+"rubycache" confuses languages and "bloodcache" sounds like a bad sequel to a [SAW](http://www.imdb.com/title/tt0387564) movie or a decent prequel to a [Blade](http://www.imdb.com/title/tt0120611/) movie. In any case, we eventually settled on apples which conveniently grow in an orchard. And there you have it: Orchard, a place to grow, prune, and pick data -- fresh from the source.

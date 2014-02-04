@@ -1,7 +1,7 @@
 {
   "name": "orchard",
   "description": "read-through caching via redis via bluebird",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "AgileMD <hello@agilemd.com>",
   "contributors": [
     "agilekurt <kurt@agilemd.com>",
