@@ -12,9 +12,9 @@ var _redisMock = {};
 
 _redisMock.createClient = function (redisURI) {
   return {
-    del: function (key) {
+    del: function (key, callback) {
       delete _redisStoreMock[key];
-      return 1;
+      callback(null, 1);
     },
     expire: sinon.spy(),
     get: function (key, callback) {
@@ -29,6 +29,7 @@ _redisMock.createClient = function (redisURI) {
     }
   };
 };
+
 
 console.log('[Orchard] Unit Tests');
 

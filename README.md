@@ -183,6 +183,8 @@ To run all tests (unit and integrated):
 npm test
 ```
 
+Fair warning: **the integrated test suite flushes redis** before each test sequence; take care with the environment in which the suite executes.
+
 
 ## Contribute
 

@@ -121,7 +121,7 @@ function Orchard (redisURI, options) {
       .then(function (key) {
         key = self._keyPrefix + key;
 
-        return self._redis.del(key);
+        return ninvoke(self._redis, 'del', key);
       });
   };
 
@@ -131,7 +131,8 @@ function Orchard (redisURI, options) {
     function _scanAndDelete (cursor, removedCt, iterationCommands) {
       // [KE] ensure the current cursor is the first element of the command array
       //       without modifying the source command array
-      var cmds = iterationCommands.slice(0).unshift(cursor);
+      var cmds = iterationCommands.slice(0);
+      cmds.unshift(cursor);
 
       return ninvoke(self._redis, 'scan', cmds)
         .then(function (result) {
@@ -139,7 +140,7 @@ function Orchard (redisURI, options) {
           var keys = result[1] || [];
 
           return Promise.all(keys.map(function (k) {
-            return self._redis.del(k);
+            return ninvoke(self._redis, 'del', k);
           })).then(function (counts) {
             removedCt += counts.reduce(function (previousValue, currentValue) { return previousValue + currentValue; }, 0);
 
@@ -170,7 +171,7 @@ function Orchard (redisURI, options) {
       });
   };
 
-  // sugar
+  // non-idiomatic sugar
   cache.evict = cache.prune;
   cache.evictPattern = cache.prunePattern;
 
