@@ -8,11 +8,6 @@ orchard
 Application-controlled, Promises/A+, read-through caching via [bluebird](https://github.com/petkaantonov/bluebird) and [redis](https://github.com/antirez/redis)
 
 
-## Motivation
-
-Because awesome.
-
-
 ## Configuration
 
 ### Instantiating a new Orchard

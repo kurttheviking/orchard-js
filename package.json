@@ -1,11 +1,10 @@
 {
   "name": "orchard",
-  "description": "read-through caching via redis via bluebird",
-  "version": "0.1.0",
-  "author": "AgileMD <hello@agilemd.com>",
+  "description": "promise-based, redis-backed, read-through caching",
+  "version": "0.1.1",
+  "author": "kurttheviking <kurttheviking@outlook.com>",
   "contributors": [
-    "agilekurt <kurt@agilemd.com>",
-    "agilemd <doc@agilemd.com>"
+    "kurttheviking <kurttheviking@outlook.com>"
   ],
   "keywords": [
     "cache",
@@ -22,7 +21,7 @@
     "test-unit": "node node_modules/mocha/bin/mocha ./test/unit",
     "test-itegrated": "node node_modules/mocha/bin/mocha ./test/integrated"
   },
-  "repository": "git@github.com:agilemd/orchard.git",
+  "repository": "git@github.com:kurttheviking/orchard.git",
   "dependencies": {
     "ninvoke": "0.1.0",
     "bluebird": "1.0.1",
