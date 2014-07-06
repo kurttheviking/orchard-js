@@ -1,7 +1,7 @@
 {
   "name": "orchard",
-  "description": "promise-based, redis-backed, read-through caching",
-  "version": "0.1.1",
+  "description": "Application-controlled, Redis-backed, Promises/A+ read-through caching",
+  "version": "0.1.2",
   "author": "kurttheviking <kurttheviking@outlook.com>",
   "contributors": [
     "kurttheviking <kurttheviking@outlook.com>"
