@@ -32,7 +32,7 @@ var cache = new Orchard('redis://authcode@192.168.1.1:6379/1', {
 ###  Valid `options` parameters
 
 - `keyPrefix`: A string that is preprended to any subseuqently used key. Useful if a single redis database supports caching for multiple services.
-- `defaultExpires`: By default, cached data never expires. Use this option to set a default [TTL](http://redis.io/commands/ttl) for all cached keys. (Key-level expiration always supercedes this default.) The value can be either an `Number` represening the number of seconds a key should live, or a duration object. Duration objects should contain one or more of `days`, `hours`, `minutes`, and `seconds` parameters.
+- `defaultExpires`: By default, cached data never expires. Use this option to set a default [TTL](http://redis.io/commands/ttl) for all cached keys. (Key-level expiration always supercedes this default.) The value can be either a `Number` represening the number of seconds a key should live, or a duration object. Duration objects should contain one or more of `days`, `hours`, `minutes`, and `seconds` parameters.
 - `scanCount`: A `Number` that hints redis' `SCAN` command (e.g. within `prunePattern` described below). Defaults to 10, per redis.
 
 ```
@@ -75,7 +75,7 @@ promisedData.then(function (cacheValue) {
 
 Rather than a string key, Orchard also accepts a key configuration object. The key configuration object must contain a `key` property and, optionally, an `expires` parameter and/or a `forceUpdate` parameter. 
 
-`expires` is an `Number` representing seconds the cached data should live; `expires` overrides the `defaultExpires` set when Orchard was instantiated. 
+`expires` is a `Number` representing seconds the cached data should live; `expires` overrides the `defaultExpires` set when Orchard was instantiated. 
 
 `forceUpdate` causes Orchard to execute the "getter" function regardless of what is currently in the cache and sets the data for future use, overriding any pre-existing data for that key; `forceUpdate` defaults to `false`.
 
