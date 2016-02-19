@@ -1,7 +1,3 @@
-<a href="http://promisesaplus.com/">
-    <img src="http://promisesaplus.com/assets/logo-small.png" alt="Promises/A+ logo" title="Promises/A+ 1.0 compliant" align="right" />
-</a>
-
 orchard
 =======
 
@@ -24,8 +20,8 @@ Or, a more realistic form:
 
 ```
 var cache = new Orchard('redis://authcode@192.168.1.1:6379/1', {
-    keyPrefix: 'app-cache',
-    defaultExpires: 60
+  keyPrefix: 'app-cache',
+  defaultExpires: 60
 });
 ```
 
@@ -37,12 +33,12 @@ var cache = new Orchard('redis://authcode@192.168.1.1:6379/1', {
 
 ```
 var cache = new Orchard('redis://authcode@192.168.1.1:6379/1', {
-    keyPrefix: 'app-cache',
-    defaultExpires: {
-        days: 14,
-        hours: 2
-    },
-    scanCount: 100
+  keyPrefix: 'app-cache',
+  defaultExpires: {
+    days: 14,
+    hours: 2
+  },
+  scanCount: 100
 });
 ```
 
@@ -62,20 +58,20 @@ var cache = new Orchard('redis://localhost');
 var Promise = require('bluebird');
 
 var promisedData = cache('jaeger', function () {
-    return Promise.resolve('echo saber');
+  return Promise.resolve('echo saber');
 };
 
 promisedData.then(function (cacheValue) {
-    console.log('cacheValue =>', cacheValue); 
+  console.log('cacheValue =>', cacheValue);
 });
 ```
 
 
 **Intermediate case**
 
-Rather than a string key, Orchard also accepts a key configuration object. The key configuration object must contain a `key` property and, optionally, an `expires` parameter and/or a `forceUpdate` parameter. 
+Rather than a string key, Orchard also accepts a key configuration object. The key configuration object must contain a `key` property and, optionally, an `expires` parameter and/or a `forceUpdate` parameter.
 
-`expires` is a `Number` representing seconds the cached data should live; `expires` overrides the `defaultExpires` set when Orchard was instantiated. 
+`expires` is a `Number` representing seconds the cached data should live; `expires` overrides the `defaultExpires` set when Orchard was instantiated.
 
 `forceUpdate` causes Orchard to execute the "getter" function regardless of what is currently in the cache and sets the data for future use, overriding any pre-existing data for that key; `forceUpdate` defaults to `false`.
 
@@ -84,17 +80,17 @@ var cache = new Orchard('redis://localhost');
 var Promise = require('bluebird');
 
 var promisedData = cache({
-    key: 'jaeger:mark iv',
-    expires: 3600,
-    forceUpdate: false
+  key: 'jaeger:mark iv',
+  expires: 3600,
+  forceUpdate: false
 }, function () {
-    return Promise.resolve('echo saber');
+  return Promise.resolve('echo saber');
 };
 ```
 
 **Complex case**
 
-The `key` property of the key configuration object can also be an `Array` of `String`, `Numbers`, and Promises. Each element of the key array is resolved, then concatenated with a semicolon (e.g. `jaeger:iv:7`). If `keyPrefix` was provided during Orchard instantiation, it is similarly added to the key string (e.g. `app-cache:jaeger:iv:7`). 
+The `key` property of the key configuration object can also be an `Array` of `String`, `Numbers`, and Promises. Each element of the key array is resolved, then concatenated with a semicolon (e.g. `jaeger:iv:7`). If `keyPrefix` was provided during Orchard instantiation, it is similarly added to the key string (e.g. `app-cache:jaeger:iv:7`).
 
 In addition, key-level `expires` can be a duration object containing one or more of `days`, `hours`, `minutes`, and `seconds` parameters -- exactly the same mechanics as `defaultExpires` described earlier.
 
@@ -104,18 +100,18 @@ var Promise = require('bluebird');
 var today = new Date();
 
 var promisedData = cache({
-    key: [
-        'jaeger',
-        req.params.markId,
-        Promise.resolve(d.getDay())
-    ],
-    expires: {
-        hours: 12,
-        minutes: 45
-    },
-    forceUpdate: false
+  key: [
+    'jaeger',
+    req.params.markId,
+    Promise.resolve(d.getDay())
+  ],
+  expires: {
+    hours: 12,
+    minutes: 45
+  },
+  forceUpdate: false
 }, function () {
-    return Promise.resolve('echo saber');
+  return Promise.resolve('echo saber');
 };
 ```
 
@@ -130,13 +126,13 @@ Orchard provides two methods for removing data from the cache prior to natural e
 
 `prune` returns a promise which resolves to the number of keys evicted (1, in the standard use case).
 
-```
+```js
 cache.prune('jaeger:mark iv');
 
 cache.prune([
-    'jaeger',
-    req.params.markId,
-    Promise.resolve(d.getDay())
+  'jaeger',
+  req.params.markId,
+  Promise.resolve(d.getDay())
 ]);
 ```
 
@@ -147,13 +143,13 @@ cache.prune([
 
 `prunePattern` returns a promise that resolves to the number of keys evicted.
 
-```
+```js
 cache.prunePattern('jaeger:*');
 
 cache.prunePattern([
-    'jaeger',
-    req.params.markId,
-    '*'
+  'jaeger',
+  req.params.markId,
+  '*'
 ]);
 ```
 
@@ -169,16 +165,8 @@ If you prefer to avoid the idiomatically-named eviction methods, Orchard also pr
 
 Orchard provides two-levels of test coverage.
 
-1. `npm run test-unit`: run unit tests against a minimally mocked redis object; this can be run on a machine that does not have redis installed
-2. `npm run test-integrated`: run integrated unit tests against `db0` of a redis database on `localhost:6379` (no authentication)
-
-To run all tests (unit and integrated):
-
-```
-npm test
-```
-
-Fair warning: **the integrated test suite flushes redis** before each test sequence; take care with the environment in which the suite executes.
+1. `npm run test`: run unit tests against a minimally mocked redis object; this can be run on a machine that does not have redis installed
+2. `npm run test-integrated`: run integrated unit tests against a redis database on `localhost:6379` (no authentication); **the integrated test suite flushes redis** before each test sequence
 
 
 ## Contribute

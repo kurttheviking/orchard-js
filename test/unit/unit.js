@@ -4,7 +4,7 @@ var sinon = require('sinon');
 
 chai.use(require('sinon-chai'));
 
-var Orchard = require('../index');
+var Orchard = require('../../index');
 var Promise = require('bluebird');
 
 var _redisStoreMock = {};

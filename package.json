@@ -2,38 +2,50 @@
   "name": "orchard",
   "description": "Application-controlled, Redis-backed, Promises/A+ read-through caching",
   "version": "0.1.2",
-  "author": "kurttheviking <kurttheviking@outlook.com>",
-  "contributors": [
-    "kurttheviking <kurttheviking@outlook.com>"
-  ],
+  "license": "MIT",
+  "main": "index.js",
   "keywords": [
     "cache",
     "redis",
-    "deferred",
-    "promise",
-    "promises-a",
-    "promises-aplus",
-    "read-through"
+    "read-through cache",
+    "redis cache",
+    "promises-aplus"
   ],
-  "main": "index.js",
-  "scripts": {
-    "test": "npm run test-unit && npm run test-itegrated",
-    "test-unit": "node node_modules/mocha/bin/mocha ./test/unit",
-    "test-itegrated": "node node_modules/mocha/bin/mocha ./test/integrated"
+  "author": {
+    "name": "Kurt Ericson",
+    "email": "github@kurttheviking.com",
+    "url": "http://github.com/kurttheviking"
   },
-  "repository": "git@github.com:kurttheviking/orchard.git",
+  "contributors": [
+    {
+      "name": "Kurt Ericson",
+      "email": "github@kurttheviking.com",
+      "url": "https://github.com/kurttheviking"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/kurttheviking/orchard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kurttheviking/orchard/issues"
+  },
+  "homepage": "https://github.com/kurttheviking/orchard#readme",
   "dependencies": {
     "ninvoke": "0.1.0",
-    "bluebird": "1.0.1",
-    "redis": "0.10.0",
+    "bluebird": "3.3.0",
+    "redis": "2.4.2",
     "redisuri": "1.1.0"
   },
   "devDependencies": {
-    "chai": "1.9.0",
-    "mocha": "1.17.0",
-    "sinon": "1.8.1",
-    "sinon-chai": "2.5.0"
+    "chai": "3.5.0",
+    "istanbul": "0.4.2",
+    "mocha": "2.4.5",
+    "sinon": "1.17.3"
   },
-  "readmeFilename": "README.md",
-  "license": "MIT"
+  "scripts": {
+    "coverage": "./node_modules/istanbul/lib/cli.js cover --report=json-summary --report=html _mocha ./test -- --recursive",
+    "test": "node node_modules/mocha/bin/mocha ./test/unit --recursive",
+    "test-itegrated": "node node_modules/mocha/bin/mocha ./test/itegrated --recursive"
+  }
 }
