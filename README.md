@@ -3,7 +3,7 @@ orchard
 
 [![Build Status](https://travis-ci.org/kurttheviking/orchard.svg?branch=master)](https://travis-ci.org/kurttheviking/orchard)
 
-In-memory, [Promises/A+](https://promisesaplus.com/), read-through [lru-cache](https://github.com/isaacs/node-lru-cache) via [bluebird](https://github.com/petkaantonov/bluebird)
+Application-controlled, Redis-backed, Promises/A+ read-through caching
 
 
 ## Use
