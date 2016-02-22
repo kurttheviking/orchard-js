@@ -41,7 +41,7 @@ cache(Promise.resolve('cacheKey'), function (key) {
 | `keyPrefix` | A string that is prepended to all cache keys encountered by the `cache` instance. Useful if a single Redis database supports caching for multiple services. |
 | `scanCount` | A `Number` that hints Redis' `SCAN` command (e.g. within `del` described below). Defaults to 10, per Redis. |
 | `ttl` | By default, cached data never expires. Use this option to set a default [TTL](http://redis.io/commands/ttl) for all cached keys. Key-level expiration always supersedes this default. The value can be either a `Number` representing lifespan in milliseconds or a valid [interval object](https://www.npmjs.com/package/interval). |
-| `url` | A valid [redis URI](https://npmjs.org/package/redisuri); defaults to 'redis://localhost:6379/0'. |
+| `url` | A valid [Redis URI](https://npmjs.org/package/redisuri); defaults to 'redis://localhost:6379/0'. |
 
 
 ## API
@@ -112,9 +112,15 @@ DEBUG=orchard* npm test
 ```
 
 
-## Changes from v0.1
+## Changes from v0
 
--
+- [breaking] Moved key-level options to third argument
+- [breaking] `#prune` (`#evict`) and `#prunePattern` (`#evictPattern`) consolidated into `#del`
+- [breaking] Renamed instance and key-level arguments (e.g. `keyPrefix` &rarr; `prefix`, `expires` &rarr; `ttl`)
+- [minor] Generalized key and priming values to any primitive, promise, or function
+- [patch] Addressed thundering herd risk
+- [patch] Upgraded dependencies
+- [patch] Reorganized and expanded test suite
 
 
 ## Contribute
@@ -144,11 +150,11 @@ Finally, an integrated test suite executes tests against a live, local database 
 npm run test-live
 ```
 
-**WARNING: the integrated test suite flushes redis** before each test sequence.
+**WARNING: the integrated test suite flushes Redis** before each test sequence.
 
 
 ## Orchard?
 
-Originally, this project was named "redcache" -- a nice contrast to the in-memory caching layer [bluecache](https://github.com/agilemd/bluecache). Unfortunately, that project name was already claimed on npm (by another redis-related project, unsurprisingly) so attention shifted to things that are red.
+Originally, this project was named "redcache" -- a nice contrast to the in-memory caching layer [bluecache](https://github.com/agilemd/bluecache). Unfortunately, that project name was already claimed on npm (by another Redis-related project, unsurprisingly) so attention shifted to things that are red.
 
 "rubycache" confuses languages and "bloodcache" sounds like a bad sequel to a [SAW](http://www.imdb.com/title/tt0387564) movie or a decent prequel to a [Blade](http://www.imdb.com/title/tt0120611/) movie. In any case, apples are red and they grow in an orchard. And there you have it: [Orchard](https://www.npmjs.com/package/orchard), a place to grow, prune, and pick data &ndash; fresh from the source.
