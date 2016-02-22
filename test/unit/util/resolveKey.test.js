@@ -13,13 +13,13 @@ function asFunc(val) {
   };
 }
 
-describe('util/resolveKey', function () {
+describe.only('util/resolveKey', function () {
   it('rejects with an error when missing key', function () {
     return resolveKey().catch(function (err) {
       expect(err).to.match(/missing required parameter: rawKey/);
     });
   });
-  
+
   it('converts a Boolean to String', function () {
     return resolveKey(true).then(function (observed) {
       expect(observed).to.equal(String(true));
@@ -107,6 +107,24 @@ describe('util/resolveKey', function () {
   it('converts a Function<Object> to String', function () {
     return resolveKey(asFunc({ t: 3 })).then(function (observed) {
       expect(observed).to.equal('{"t":3}');
+    });
+  });
+
+  it('accepts options.prefix', function () {
+    return resolveKey(asFunc('mark-4'), { prefix: 'jaeger' }).then(function (observed) {
+      expect(observed).to.equal('jaeger:mark-4');
+    });
+  });
+
+  it('allows options.prefix when provided a trailing MATCH pattern', function () {
+    return resolveKey(['mark-*'], { prefix: 'jaeger' }).then(function (observed) {
+      expect(observed).to.equal('jaeger:mark-*');
+    });
+  });
+
+  it('ignores options.prefix when provided a leading MATCH pattern', function () {
+    return resolveKey(['*-4'], { prefix: 'jaeger' }).then(function (observed) {
+      expect(observed).to.equal('*-4');
     });
   });
 });

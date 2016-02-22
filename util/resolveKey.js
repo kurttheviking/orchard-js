@@ -27,14 +27,25 @@ function resolveKey(rawKey, opts) {
       keyComponents.map(BPromise.resolve)
     );
   })
-  .then(function concatenateKey(keyElements) {
-    return keyElements.map(function toString(item) {
+  .then(function concatenateKey(keyItems) {
+    return keyItems.map(function toString(item) {
       if (Object.prototype.toString.call(item) === '[object Object]') {
         return JSON.stringify(item);
       }
 
       return String(item);
-    }).join(KEY_SEPARATOR);
+    });
+  })
+  .then(function checkForLeadingPattern(keyItems) {
+    var parsedKeyItems = keyItems;
+
+    // [KE] if both prefix and a leading MATCH pattern were specified, ignore the prefix;
+    //      processed ex post because of the promise/primitive type resolution requirement
+    if (options.prefix && keyItems.length > 1 && keyItems[1].slice(0, 1) === '*') {
+      parsedKeyItems = keyItems.slice(1);
+    }
+
+    return parsedKeyItems.join(KEY_SEPARATOR);
   });
 }
 

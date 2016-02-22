@@ -37,7 +37,7 @@ cache(Promise.resolve('cacheKey'), function (key) {
 
 | Option | Expected value |
 | :------- | :----------- |
-| `allowFailthrough` | By default, Orchard exposes connection and database errors from Redis via a rejected Promise. Set this option to `true` to ignore these errors and invoke the priming value without persisting the result when such an error occurs. |
+| `allowFailthrough` | By default, Orchard exposes connection and database errors from Redis via a rejected Promise. Set this option to `true` to ignore these errors and invoke the priming value without persisting the result when these errors occur. |
 | `keyPrefix` | A string that is prepended to all cache keys encountered by the `cache` instance. Useful if a single Redis database supports caching for multiple services. |
 | `scanCount` | A `Number` that hints Redis' `SCAN` command (e.g. within `del` described below). Defaults to 10, per Redis. |
 | `ttl` | By default, cached data never expires. Use this option to set a default [TTL](http://redis.io/commands/ttl) for all cached keys. Key-level expiration always supersedes this default. The value can be either a `Number` representing lifespan in milliseconds or a valid [interval object](https://www.npmjs.com/package/interval). |
