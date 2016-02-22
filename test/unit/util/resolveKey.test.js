@@ -13,7 +13,7 @@ function asFunc(val) {
   };
 }
 
-describe.only('util/resolveKey', function () {
+describe('util/resolveKey', function () {
   it('rejects with an error when missing key', function () {
     return resolveKey().catch(function (err) {
       expect(err).to.match(/missing required parameter: rawKey/);
