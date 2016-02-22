@@ -107,7 +107,7 @@ describe('options', function () {
     var args = createClient.getCall(0).args;
 
     expect(cache).to.be.a('function');
-    expect(client.select.getCall(0).args[0]).to.equal(0);
+    expect(client.select.callCount).to.equal(0);
 
     expect(args[0]).to.equal(6379);
     expect(args[1]).to.equal('localhost');

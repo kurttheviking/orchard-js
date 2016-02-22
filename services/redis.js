@@ -13,7 +13,7 @@ function RedisClient(uri) {
   options.auth_pass = params.auth;
   this.client = redis.createClient(params.port, params.host, options);
 
-  if (params.hasOwnProperty('db')) {
+  if (params.hasOwnProperty('db') && params.db !== 0) {
     this.client.select(params.db);
   }
 
