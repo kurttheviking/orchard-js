@@ -88,6 +88,7 @@ describe('util/resolveValue', function () {
     var spy = sinon.stub().returns(val);
 
     return resolveValue(key, spy).then(function (observed) {
+      expect(spy.args[0][0]).to.equal(key);
       expect(observed).to.deep.equal(val);
     });
   });
@@ -97,6 +98,7 @@ describe('util/resolveValue', function () {
     var spy = sinon.stub().returns(val);
 
     return resolveValue(key, spy).then(function (observed) {
+      expect(spy.args[0][0]).to.equal(key);
       expect(observed).to.deep.equal(val);
     });
   });
@@ -106,6 +108,7 @@ describe('util/resolveValue', function () {
     var spy = sinon.stub().returns(val);
 
     return resolveValue(key, spy).then(function (observed) {
+      expect(spy.args[0][0]).to.equal(key);
       expect(observed).to.deep.equal(val);
     });
   });
@@ -115,6 +118,7 @@ describe('util/resolveValue', function () {
     var spy = sinon.stub().returns(val);
 
     return resolveValue(key, spy).then(function (observed) {
+      expect(spy.args[0][0]).to.equal(key);
       expect(observed).to.deep.equal(val);
     });
   });
@@ -124,6 +128,7 @@ describe('util/resolveValue', function () {
     var spy = sinon.stub().returns(val);
 
     return resolveValue(key, spy).then(function (observed) {
+      expect(spy.args[0][0]).to.equal(key);
       expect(observed).to.deep.equal(val);
     });
   });

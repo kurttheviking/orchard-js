@@ -77,7 +77,7 @@ describe('cache', function () {
     });
   });
 
-  it('invokes the priming function only once', function () {
+  it('invokes the priming function once per key', function () {
     var value = 32;
     var primingValue = sinon.stub().returns(value);
 
@@ -86,6 +86,58 @@ describe('cache', function () {
     })
     .then(function () {
       expect(primingValue.callCount).to.equal(1);
+    });
+  });
+
+  it('invokes a priming function only once on successive cache calls', function () {
+    var key = 'jaeger';
+    var value = 'mark iv';
+    var primingValue = sinon.stub().returns(value);
+
+    return BPromise.all([
+      cache(key, primingValue),
+      BPromise.delay(1, cache(key, primingValue)),
+      BPromise.delay(3, cache(key, primingValue)),
+      BPromise.delay(5, cache(key, primingValue))
+    ])
+    .then(function (results) {
+      results.map(function (observedValue) {
+        expect(observedValue).to.equal(value);
+      });
+
+      expect(primingValue.callCount).to.equal(1);
+    });
+  });
+
+  it('invokes a priming function only once on immediate cache calls', function () {
+    var key = 'jaeger';
+    var value = 'mark iv';
+    var primingValue = sinon.stub().returns(BPromise.delay(5, value));
+
+    return BPromise.all([
+      cache(key, primingValue),
+      cache(key, primingValue),
+      cache(key, primingValue),
+      cache(key, primingValue)
+    ])
+    .then(function (results) {
+      results.map(function (observedValue) {
+        expect(observedValue).to.equal(value);
+      });
+
+      expect(primingValue.callCount).to.equal(1);
+    });
+  });
+
+  it('invokes a priming function on each call if error thrown', function () {
+    var key = 'jaeger';
+    var primingValue = sinon.stub().throws(TypeError);
+
+    return cache(key, primingValue).then(function () {
+      return cache(key, primingValue);
+    })
+    .then(function () {
+      expect(primingValue.callCount).to.equal(2);
     });
   });
 

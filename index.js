@@ -3,6 +3,7 @@
 var BPromise = require('bluebird');
 var debug = require('debug')('orchard');
 var EventEmitter = require('events').EventEmitter;
+var uuid = require('uuid');
 
 var RedisClient = require('./services/redis');
 var parseTTL = require('./util/parseTTL');
@@ -14,6 +15,7 @@ function Orchard(opts) {
   var self = this;
 
   var bus;
+  var pending = {};
   var redis;
 
   debug('init', options);
@@ -60,9 +62,8 @@ function Orchard(opts) {
 
   function cache(key, value, invocationOpts) {
     var config = invocationOpts || {};
+    var reqId = uuid.v4();
     var tsInit = Date.now();
-
-    var reqId = tsInit.toString(36);
 
     debug('[%s] cache request for: %s', reqId, key);
 
@@ -87,9 +88,15 @@ function Orchard(opts) {
         if (remoteValue && !config.forceUpdate) {
           emit(parsedKey, true);
           return JSON.parse(remoteValue);
+        } else if (pending[key]) {
+          return pending[key];
         }
 
-        return resolveValue(parsedKey, value).then(function cacheValue(parsedValue) {
+        pending[key] = resolveValue(
+          parsedKey,
+          value
+        )
+        .then(function cacheValue(parsedValue) {
           debug('[%s] primed value: %s', reqId, parsedValue);
 
           return redis.set(
@@ -103,15 +110,21 @@ function Orchard(opts) {
               redis.expire(key, keyTTL);
             }
 
-            emit(parsedKey, false);
-
             debug('[%s] set ttl: %s', reqId, keyTTL);
+
+            emit(parsedKey, false);
+            delete pending[key];
+
             return parsedValue;
           });
         });
+
+        return pending[key];
       })
       .catch(function handleError(err) {
         debug('[%s] cache error: %s', reqId, err);
+
+        delete pending[key];
 
         if (self.allowFailthrough) {
           return resolveValue(parsedKey, value);
