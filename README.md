@@ -43,6 +43,8 @@ cache(Promise.resolve('cacheKey'), function (key) {
 | `ttl` | By default, cached data never expires. Use this option to set a default [TTL](http://redis.io/commands/ttl) for all cached keys. Key-level expiration always supersedes this default. The value can be either a `Number` representing lifespan in milliseconds or a valid [interval object](https://www.npmjs.com/package/interval). |
 | `url` | A valid [Redis URI](https://npmjs.org/package/redisuri); defaults to 'redis://localhost:6379/0'. |
 
+Note: [Redis uses seconds for expiration timers](http://redis.io/commands/expire); Orchard internally converts `ttl` from milliseconds to seconds and rounded down.
+
 
 ## API
 
