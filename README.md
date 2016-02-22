@@ -1,172 +1,120 @@
 orchard
 =======
 
-Application-controlled, Promises/A+ read-through caching via [bluebird](https://github.com/petkaantonov/bluebird) and [redis](https://github.com/antirez/redis)
+[![Build Status](https://travis-ci.org/kurttheviking/orchard.svg?branch=master)](https://travis-ci.org/kurttheviking/orchard)
+
+In-memory, [Promises/A+](https://promisesaplus.com/), read-through [lru-cache](https://github.com/isaacs/node-lru-cache) via [bluebird](https://github.com/petkaantonov/bluebird)
 
 
-## Configuration
+## Use
 
-### Instantiating a new Orchard
+First, instantiate the cache &ndash; passing [options](https://github.com/kurttheviking/orchard#options) if necessary.
 
-Instantiate an Orchard instance by passing a valid [redis URI](https://npmjs.org/package/redisuri) and optionally an `options` object.
-
-For example, the minimalist form:
-
-```
-var cache = new Orchard('redis://localhost');
-```
-
-Or, a more realistic form:
-
-```
-var cache = new Orchard('redis://authcode@192.168.1.1:6379/1', {
+```js
+var Orchard = require('orchard');
+var options = {
+  ttl: {hours: 1},
   keyPrefix: 'app-cache',
-  defaultExpires: 60
+  url: 'redis://auth@10.0.100.0:6379/1'
+};
+
+var cache = Orchard(options);
+```
+
+Traditional cache "getting" and "setting" takes place within a single call, promoting functional use. The `cache` instance is a Promise-returning function which takes two parameters: a cache key and a priming value.
+
+```js
+cache(Promise.resolve('cacheKey'), function (key) {
+  console.log("the invoked key is " + cacheKey);  // "the invoked key is cacheKey"
+  return Promise.resolve('dinosaurs');
+})
+.then(function (value) {
+  console.log("the resolved value is " + _value);  // "the resolved value is dinosaurs"
 });
 ```
 
-###  Valid `options` parameters
+## Options
 
-- `keyPrefix`: A string that is preprended to any subseuqently used key. Useful if a single redis database supports caching for multiple services.
-- `defaultExpires`: By default, cached data never expires. Use this option to set a default [TTL](http://redis.io/commands/ttl) for all cached keys. (Key-level expiration always supercedes this default.) The value can be either a `Number` represening the number of seconds a key should live, or a duration object. Duration objects should contain one or more of `days`, `hours`, `minutes`, and `seconds` parameters.
-- `scanCount`: A `Number` that hints redis' `SCAN` command (e.g. within `prunePattern` described below). Defaults to 10, per redis.
+| Option | Expected value |
+| :------- | :----------- |
+| `allowFailthrough` | By default, Orchard exposes connection and database errors from Redis via a rejected Promise. Set this option to `true` to ignore these errors and invoke the priming value without persisting the result when such an error occurs. |
+| `keyPrefix` | A string that is prepended to all cache keys encountered by the `cache` instance. Useful if a single Redis database supports caching for multiple services. |
+| `scanCount` | A `Number` that hints Redis' `SCAN` command (e.g. within `del` described below). Defaults to 10, per Redis. |
+| `ttl` | By default, cached data never expires. Use this option to set a default [TTL](http://redis.io/commands/ttl) for all cached keys. Key-level expiration always supersedes this default. The value can be either a `Number` representing lifespan in milliseconds or a valid [interval object](https://www.npmjs.com/package/interval). |
+| `url` | A valid [redis URI](https://npmjs.org/package/redisuri); defaults to 'redis://localhost:6379/0'. |
 
-```
-var cache = new Orchard('redis://authcode@192.168.1.1:6379/1', {
-  keyPrefix: 'app-cache',
-  defaultExpires: {
-    days: 14,
-    hours: 2
-  },
-  scanCount: 100
-});
-```
 
 ## API
 
-Orchard is optimized for cases where "in-line" cache declarations are desirable -- the logical distinction between "getting" and "setting" activities is minimized. Instead, under a [read-through paradigm](https://www.google.com/search?q=read-through+vs+write-through+cache), "setting" occurs on any cache miss (unless `forceUpdate` is passed) using the data "getter" function. In the case of Orchard, the "getter" should be a [Promise](https://github.com/promises-aplus/promises-spec)-returning function. Failure to provide a "getter" will cause Orchard to immediately throw a `TypeError`.
+#### `cache(key, primingValue, [options])`
 
+Attempts to get the current value of `key` from the cache. If the key does not exist, the `primingValue` is determined and the underlying cache value is set. If the `primingValue` is a function, it is invoked with the resolved `key` as its single argument.
 
-### Getting & setting data
+Both `key` and `primingValue` can be a Boolean, Number, String, Array, Object, or a function that returns one of these primitives, or a Promise for one of these primitives. The `cache` instance stores a memo for a promised value while the value is being resolved in order to mitigate a [stampede](https://en.wikipedia.org/wiki/Cache_stampede) for the underlying `primingValue` at the expense of local memory. However, a stampede may still occur against a `key` function because it is invoked on each cache call. In most cases, this problem is mitigated by using a locally available key. If you plan to remotely resolve the key you may want to consider caching the key function as well.
 
-**Minimalist case**
+A rejected promise is returned if `key` is missing or if there is an error resolving the `primingValue`. Rejected cache calls are not persisted in Redis.
 
-In this case, an explicit cache key is used and a simple function returns a Promise for a string.
+At invocation, the following options are available:
 
-```
-var cache = new Orchard('redis://localhost');
-var Promise = require('bluebird');
+| Option | Expected value |
+| :------- | :----------- |
+| `forceUpdate` | Determine the priming value and set the cache value regardless of what is currently cached in Redis |
+| `ttl` | Key-specific TTL to override the instantiated TTL option; either a `Number` representing lifespan in milliseconds or a valid [interval object](https://www.npmjs.com/package/interval)  |
 
-var promisedData = cache('jaeger', function () {
-  return Promise.resolve('echo saber');
-};
+#### `cache#del(key)`
 
-promisedData.then(function (cacheValue) {
-  console.log('cacheValue =>', cacheValue);
+Returns a promise that resolves to the `Number` of removed keys after deleting `key` from Redis. If the first or last character of the resolved `key` is an asterisk (`*`), the key is treated as a pattern and the `SCAN` command is used to find all matching keys using the `MATCH` option and either the default iteration count or the configured `scanCount`.
+
+#### `cache#on(eventName, eventHandler)`
+
+`eventName` is a string, corresponding to a [supported event](https://github.com/kurttheviking/orchard#emitted-events). `eventHandler` is a function which responds to the data provided by the target event.
+
+```js
+cache.on('cache:hit', function (data) {
+  console.log('The cache took ' + data.ms + ' milliseconds to respond.');
 });
 ```
 
 
-**Intermediate case**
+## Emitted events
 
-Rather than a string key, Orchard also accepts a key configuration object. The key configuration object must contain a `key` property and, optionally, an `expires` parameter and/or a `forceUpdate` parameter.
+The cache instance is also an [event emitter](http://nodejs.org/api/events.html#events_class_events_eventemitter) which provides an `on` method against which the implementing application can listen for the below events.
 
-`expires` is a `Number` representing seconds the cached data should live; `expires` overrides the `defaultExpires` set when Orchard was instantiated.
-
-`forceUpdate` causes Orchard to execute the "getter" function regardless of what is currently in the cache and sets the data for future use, overriding any pre-existing data for that key; `forceUpdate` defaults to `false`.
-
-```
-var cache = new Orchard('redis://localhost');
-var Promise = require('bluebird');
-
-var promisedData = cache({
-  key: 'jaeger:mark iv',
-  expires: 3600,
-  forceUpdate: false
-}, function () {
-  return Promise.resolve('echo saber');
-};
-```
-
-**Complex case**
-
-The `key` property of the key configuration object can also be an `Array` of `String`, `Numbers`, and Promises. Each element of the key array is resolved, then concatenated with a semicolon (e.g. `jaeger:iv:7`). If `keyPrefix` was provided during Orchard instantiation, it is similarly added to the key string (e.g. `app-cache:jaeger:iv:7`).
-
-In addition, key-level `expires` can be a duration object containing one or more of `days`, `hours`, `minutes`, and `seconds` parameters -- exactly the same mechanics as `defaultExpires` described earlier.
-
-```
-var cache = new Orchard('redis://localhost');
-var Promise = require('bluebird');
-var today = new Date();
-
-var promisedData = cache({
-  key: [
-    'jaeger',
-    req.params.markId,
-    Promise.resolve(d.getDay())
-  ],
-  expires: {
-    hours: 12,
-    minutes: 45
-  },
-  forceUpdate: false
-}, function () {
-  return Promise.resolve('echo saber');
-};
-```
-
-### Evicting data
-
-Orchard provides two methods for removing data from the cache prior to natural expiration.
-
-
-**cache.prune(key || keyConfigurationArray)**
-
-`prune` will attempt to [DEL](http://redis.io/commands/del) a key from the cache. Alternatively, `prune` accepts a key configuration array (as described above).
-
-`prune` returns a promise which resolves to the number of keys evicted (1, in the standard use case).
+#### cache:hit
 
 ```js
-cache.prune('jaeger:mark iv');
-
-cache.prune([
-  'jaeger',
-  req.params.markId,
-  Promise.resolve(d.getDay())
-]);
+{
+  'key': <String>,
+  'ms': <Number:Integer:Milliseconds>
+}
 ```
 
+Note: `ms` is milliseconds elapsed between cache invocation and final resolution of the cached value.
 
-**cache.prunePattern(keyPattern || keyConfigurationArray)**
-
-`prunePattern` is used to delete all keys matching a valid redis key pattern. This method uses [SCAN](http://redis.io/commands/scan) to iterate over all keys while minimizing blocking actions. The key or key configuration array is used within redis' `MATCH` option while `COUNT` uses either the redis default or `scanCount`, if specified at instantiation. All matching keys are removed with [DEL](http://redis.io/commands/del).
-
-`prunePattern` returns a promise that resolves to the number of keys evicted.
+#### cache:miss
 
 ```js
-cache.prunePattern('jaeger:*');
-
-cache.prunePattern([
-  'jaeger',
-  req.params.markId,
-  '*'
-]);
+{
+  'key': <String>,
+  'ms': <Number:Integer:Milliseconds>
+}
 ```
 
-Note: If you are not familiar with `SCAN`, the [redis documentation](http://redis.io/commands/scan) provides a thorough discussion about various state concerns.
+Note: `ms` is milliseconds elapsed between cache invocation and final resolution of the priming value.
 
 
-**evict() and evictPatten()**
+## Debug
 
-If you prefer to avoid the idiomatically-named eviction methods, Orchard also provides `evict` (which aliases `prune`) and `evictPattern` (which aliases `prunePattern`).
+This module is instrumented with [debug](https://www.npmjs.com/package/debug) to provide information about cache behavior during development. All debug invocations use the `orchard` prefix for targeted debug output:
+
+```js
+DEBUG=orchard* npm test
+```
 
 
-## Tests
+## Changes from v0.1
 
-Orchard provides two-levels of test coverage.
-
-1. `npm run test`: run unit tests against a minimally mocked redis object; this can be run on a machine that does not have redis installed
-2. `npm run test-integrated`: run integrated unit tests against a redis database on `localhost:6379` (no authentication); **the integrated test suite flushes redis** before each test sequence
+-
 
 
 ## Contribute
@@ -174,8 +122,33 @@ Orchard provides two-levels of test coverage.
 PRs are welcome! For bugs, please include a failing test which passes when your PR is applied.
 
 
+## Tests
+
+To run the linter and unit test suite:
+
+```sh
+npm test
+```
+
+Or, to determine unit test coverage:
+
+```sh
+npm run coverage
+```
+
+This project maintains 100% coverage of statements, branches, and functions.
+
+Finally, an integrated test suite executes tests against a live, local database (`redis://localhost:6379/0`):
+
+```sh
+npm run test-live
+```
+
+**WARNING: the integrated test suite flushes redis** before each test sequence.
+
+
 ## Orchard?
 
-Originally, this project was named "redcache" -- a nice contrast to our in-memory caching layer [bluecache](https://github.com/agilemd/bluecache). Unfortunately, that project name was already claimed on npm (by another redis-related project, unsurprisingly) so instead we turned our attention to things that are red.
+Originally, this project was named "redcache" -- a nice contrast to the in-memory caching layer [bluecache](https://github.com/agilemd/bluecache). Unfortunately, that project name was already claimed on npm (by another redis-related project, unsurprisingly) so attention shifted to things that are red.
 
-"rubycache" confuses languages and "bloodcache" sounds like a bad sequel to a [SAW](http://www.imdb.com/title/tt0387564) movie or a decent prequel to a [Blade](http://www.imdb.com/title/tt0120611/) movie. In any case, we eventually settled on apples which conveniently grow in an orchard. And there you have it: Orchard, a place to grow, prune, and pick data -- fresh from the source.
+"rubycache" confuses languages and "bloodcache" sounds like a bad sequel to a [SAW](http://www.imdb.com/title/tt0387564) movie or a decent prequel to a [Blade](http://www.imdb.com/title/tt0120611/) movie. In any case, apples are red and they grow in an orchard. And there you have it: [Orchard](https://www.npmjs.com/package/orchard), a place to grow, prune, and pick data &ndash; fresh from the source.

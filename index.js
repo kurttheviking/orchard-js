@@ -1,189 +1,142 @@
-/*jslint node: true */
 'use strict';
 
-var ninvoke = require('ninvoke');
-var Promise = require('bluebird');
-var redisuri = require('redisuri');
+var BPromise = require('bluebird');
+var debug = require('debug')('orchard');
+var EventEmitter = require('events').EventEmitter;
 
-var KEY_SEPARATOR = ':';
+var RedisClient = require('./services/redis');
+var parseTTL = require('./util/parseTTL');
+var resolveKey = require('./util/resolveKey');
+var resolveValue = require('./util/resolveValue');
 
+function Orchard(opts) {
+  var options = opts || {};
+  var self = this;
 
-function _connectRedis (redisURI, redis) {
-  redis = redis || require('redis');
+  var bus;
+  var redis;
 
-  var conf = redisuri.parse(redisuri.validate(redisURI));
-  var client = redis.createClient(conf.port, conf.host, {
-    auth_pass: conf.auth
-  });
-
-  client.select(conf.db);
-
-  return client;
-}
-
-function _parseDuration (duration) {
-  var parsed = duration;
-
-  if (typeof duration === 'object') {
-    parsed = 0;
-    parsed += duration.days ? duration.days * 86400 : 0;
-    parsed += duration.hours ? duration.hours * 3600 : 0;
-    parsed += duration.minutes ? duration.minutes * 60 : 0;
-    parsed += duration.seconds ? duration.seconds : 0;
-  }
-
-  return parseInt(parsed, 10);
-}
-
-function _parsePromisedKey (key) {
-  return new Promise.resolve(key).then(function (_key) {
-    if (Array.isArray(_key)) {
-      return Promise.all(_key.map(Promise.resolve)).then(function (_keys) {
-        return _keys.join(KEY_SEPARATOR);
-      });
-    }
-    else if (typeof _key === 'object') {
-      return JSON.stringify(_key);
-    }
-
-    return String(key);
-  });
-}
-
-
-function Orchard (redisURI, options) {
-  var self = this;  // [KE] provide scope clarity; reduces .bind(this) complications...
+  debug('init', options);
 
   if (!(self instanceof Orchard)) {
-    return new Orchard(redisURI, options);
+    return new Orchard(options);
   }
 
-  if (!redisURI  || (typeof redisURI !== 'string')) {
-    throw new TypeError('Orchard instance requires a redis URI connection string as the first parameter');
-  }
+  self.allowFailthrough = !!options.allowFailthrough;
+  self.prefix = options.prefix ? String(options.prefix) : '';
+  self.scanCount = options.scanCount ? Math.abs(parseInt(options.scanCount, 10)) : 10;
+  self.ttl = parseTTL(options.ttl);
+  self.url = options.url || 'redis://localhost:6379';
 
-  self._redisURI = redisURI;
+  bus = new EventEmitter();
+  redis = new RedisClient(self.url);
 
-  if (!options) {
-    options = {};
-  }
+  function scanAndDelete(cursor, removedCt, iterationCommands) {
+    // [KE] make the current cursor the first element of the executed command array
+    //      without modifying the original command array
+    var cmds = [cursor].concat(iterationCommands.slice(0));
+    var nextRemoveCount = removedCt;
 
-  self._defaultTTL = options.defaultExpires ? _parseDuration(options.defaultExpires) : null;
-  self._keyPrefix = options.keyPrefix ? String(options.keyPrefix) + KEY_SEPARATOR : '';
-  self._scanCount = options.scanCount ? parseInt(options.scanCount, 10) : null;
+    return redis.scan(cmds).then(function deleteMatches(result) {
+      var cursorNew = parseInt(result[0], 10);
+      var matchedKeys = result[1];
 
-  self._redis = _connectRedis(self._redisURI, options._redis);
+      return BPromise.all(matchedKeys.map(redis.del)).then(function aggregate(counts) {
+        var i;
 
-  self._redis.on('error', function (err) {
-    throw err;
-  });
-
-  function cache (config, dataFn) {
-    var ttl = config.expires ? _parseDuration(config.expires) : self._defaultTTL;
-    var forceUpdate = !!config.forceUpdate;
-
-    return _parsePromisedKey(config.key || config)
-      .then(function (key) {
-        key = self._keyPrefix + key;
-
-        var readThrough = function () {
-          return dataFn()
-            .then(function (raw) {
-              self._redis.set(key, JSON.stringify(raw));
-
-              if (ttl) {
-                self._redis.expire(key, ttl);
-              }
-
-              return raw;
-            });
-        };
-
-        if (forceUpdate) {
-          return readThrough();
+        for (i = counts.length; i--;) {
+          nextRemoveCount += counts[i];
         }
 
-        return ninvoke(self._redis, 'get', key)
-          .then(function (data) {
-            if (data) {
-              return JSON.parse(data);
-            }
+        // [KE] cursor returns to 0 after fully enumerating the keyspace
+        if (cursorNew === 0) {
+          return nextRemoveCount;
+        }
 
-            return readThrough();
-          });
+        return scanAndDelete(cursorNew, nextRemoveCount, iterationCommands);
       });
+    });
   }
 
-  cache.prune = function (keyPattern) {
-    var self = this;
+  function cache(key, value, invocationOpts) {
+    var config = invocationOpts || {};
+    var tsInit = Date.now();
 
-    return _parsePromisedKey(keyPattern)
-      .then(function (key) {
-        key = self._keyPrefix + key;
+    var reqId = tsInit.toString(36);
 
-        return ninvoke(self._redis, 'del', key);
+    debug('[%s] cache request for: %s', reqId, key);
+
+    function emit(resolvedKey, wasHit) {
+      var eventName = wasHit ? 'cache:hit' : 'cache:miss';
+      var tsExit = Date.now();
+
+      debug('[%s] emit event: %s for %s', reqId, eventName, resolvedKey);
+
+      bus.emit(eventName, {
+        key: resolvedKey,
+        ms: tsExit - tsInit
       });
-  };
-
-  cache.prunePattern = function (keyPattern) {
-    var self = this;
-
-    function _scanAndDelete (cursor, removedCt, iterationCommands) {
-      // [KE] ensure the current cursor is the first element of the command array
-      //       without modifying the source command array
-      var cmds = iterationCommands.slice(0);
-      cmds.unshift(cursor);
-
-      return ninvoke(self._redis, 'scan', cmds)
-        .then(function (result) {
-          var cursorNew = parseInt(result[0], 10);
-          var keys = result[1] || [];
-
-          return Promise.all(keys.map(function (k) {
-            return ninvoke(self._redis, 'del', k);
-          })).then(function (counts) {
-            removedCt += counts.reduce(function (previousValue, currentValue) { return previousValue + currentValue; }, 0);
-
-            // [KE] per redis, cursor returns to 0 once it has fully iterated through the keyspace
-            if (cursorNew === 0) {
-              return removedCt;
-            }
-
-            return _scanAndDelete(cursorNew, removedCt, iterationCommands);
-          });
-
-        });
     }
 
-    return _parsePromisedKey(keyPattern)
-      .then(function (key) {
-        key = self._keyPrefix + key;
+    return resolveKey(key, { prefix: self.prefix }).then(function getValue(parsedKey) {
+      debug('[%s] resolved key: %s', reqId, parsedKey);
 
-        var cmds = ['MATCH', key];
+      return redis.get(parsedKey).then(function checkCacheValue(remoteValue) {
+        debug('[%s] remote value: %s', reqId, remoteValue);
 
-        if (self._scanCount) {
-          cmds.push('COUNT');
-          cmds.push(self._scanCount);
+        if (remoteValue && !config.forceUpdate) {
+          emit(parsedKey, true);
+          return JSON.parse(remoteValue);
         }
 
-        // _scanAndDelete(cursor, removedCt, iterationCommands)
-        return _scanAndDelete(0, 0, cmds);
+        return resolveValue(parsedKey, value).then(function cacheValue(parsedValue) {
+          debug('[%s] primed value: %s', reqId, parsedValue);
+
+          return redis.set(
+            parsedKey,
+            JSON.stringify(parsedValue)
+          )
+          .then(function setTTL() {
+            var keyTTL = config.ttl ? parseTTL(config.ttl) : self.ttl;
+
+            if (keyTTL) {
+              redis.expire(key, keyTTL);
+            }
+
+            emit(parsedKey, false);
+
+            debug('[%s] set ttl: %s', reqId, keyTTL);
+            return parsedValue;
+          });
+        });
+      })
+      .catch(function handleError(err) {
+        debug('[%s] cache error: %s', reqId, err);
+
+        if (self.allowFailthrough) {
+          return resolveValue(parsedKey, value);
+        }
       });
+    });
+  }
+
+  cache.del = function pruneKeyspace(key) {
+    return resolveKey(key, { prefix: self.prefix }).then(function remove(parsedKey) {
+      var commands;
+
+      if (parsedKey.slice(0, 1) === '*' || parsedKey.slice(-1) === '*') {
+        commands = ['MATCH', parsedKey, 'COUNT', self.scanCount];
+
+        return scanAndDelete(0, 0, commands);
+      }
+
+      return redis.del(parsedKey);
+    });
   };
 
-  // non-idiomatic sugar
-  cache.evict = cache.prune;
-  cache.evictPattern = cache.prunePattern;
-
-  // [KE] eventually, this should expost other logging functionality
-  if (options._debug) {
-    cache._redis = self._redis;
-    cache._defaultTTL = self._defaultTTL;
-    cache._keyPrefix = self._keyPrefix;
-    cache._parseDuration = _parseDuration;
-    cache._parsePromisedKey = _parsePromisedKey;
-    cache._scanCount = self._scanCount;
-  }
+  cache.on = function on() {
+    bus.on.apply(bus, arguments);
+  };
 
   return cache;
 }
