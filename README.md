@@ -8,28 +8,28 @@ Application-controlled, Redis-backed, Promises/A+ read-through caching
 
 ## Use
 
-First, instantiate the cache &ndash; passing [options](https://github.com/kurttheviking/orchard#options) if necessary.
+First, instantiate the cache with desired [options](https://github.com/kurttheviking/orchard#options).
 
 ```js
 var Orchard = require('orchard');
 var options = {
-  ttl: {hours: 1},
   keyPrefix: 'app-cache',
+  ttl: {hours: 1},
   url: 'redis://auth@10.0.100.0:6379/1'
 };
 
 var cache = Orchard(options);
 ```
 
-Traditional cache "getting" and "setting" takes place within a single call, promoting functional use. The `cache` instance is a Promise-returning function which takes two parameters: a cache key and a priming value.
+Cache "getting" and "setting" takes place within a single call, promoting functional use. The `cache` instance is a Promise-returning function which takes two parameters: a cache `key` and a priming `value`.
 
 ```js
-cache(Promise.resolve('cacheKey'), function (key) {
-  console.log("the invoked key is " + cacheKey);  // "the invoked key is cacheKey"
-  return Promise.resolve('dinosaurs');
+cache(Promise.resolve('kaiju'), function (key) {
+  console.log("the invoked key is " + cacheKey);  // "the invoked key is dinosaurs"
+  return Promise.resolve(['Godzilla', 'Mothra', 'Rodan']);
 })
 .then(function (value) {
-  console.log("the resolved value is " + _value);  // "the resolved value is dinosaurs"
+  console.log("the cached value is " + value);  // "the resolved value is ['Godzilla', ...]"
 });
 ```
 
@@ -43,7 +43,7 @@ cache(Promise.resolve('cacheKey'), function (key) {
 | `ttl` | By default, cached data never expires. Use this option to set a default [TTL](http://redis.io/commands/ttl) for all cached keys. Key-level expiration always supersedes this default. The value can be either a `Number` representing lifespan in milliseconds or a valid [interval object](https://www.npmjs.com/package/interval). |
 | `url` | A valid [Redis URI](https://npmjs.org/package/redisuri); defaults to 'redis://localhost:6379/0'. |
 
-Note: [Redis uses seconds for expiration timers](http://redis.io/commands/expire); Orchard internally converts `ttl` from milliseconds to seconds and rounded down.
+Note: [Redis uses seconds for expiration timers](http://redis.io/commands/expire); Orchard internally converts `ttl` from milliseconds to seconds, rounding down.
 
 
 ## API
@@ -60,19 +60,19 @@ At invocation, the following options are available:
 
 | Option | Expected value |
 | :------- | :----------- |
-| `forceUpdate` | Determine the priming value and set the cache value regardless of what is currently cached in Redis |
-| `ttl` | Key-specific TTL to override the instantiated TTL option; either a `Number` representing lifespan in milliseconds or a valid [interval object](https://www.npmjs.com/package/interval)  |
+| `forceUpdate` | Determine the priming value and update Redis ignoring any previously cached data |
+| `ttl` | Key-specific TTL override of the instance TTL; either a `Number` representing lifespan in milliseconds or a valid [interval object](https://www.npmjs.com/package/interval) |
 
 #### `cache#del(key)`
 
-Returns a promise that resolves to the `Number` of removed keys after deleting `key` from Redis. If the first or last character of the resolved `key` is an asterisk (`*`), the key is treated as a pattern and the `SCAN` command is used to find all matching keys using the `MATCH` option and either the default iteration count or the configured `scanCount`.
+Returns a promise that resolves to the number of removed keys after deleting `key` from Redis. If the first or last character of the resolved `key` is an asterisk (`*`), the key is treated as a pattern and the `SCAN` command is used to find all matching keys via Redis' `MATCH` option and either the default iteration count or the configured `scanCount`. The instance's `keyPrefix` is not applied in cases with a leading `MATCH` pattern indicator (`*`).
 
 #### `cache#on(eventName, eventHandler)`
 
 `eventName` is a string, corresponding to a [supported event](https://github.com/kurttheviking/orchard#emitted-events). `eventHandler` is a function which responds to the data provided by the target event.
 
 ```js
-cache.on('cache:hit', function (data) {
+cache.on('cache:hit', function eventHandler(data) {
   console.log('The cache took ' + data.ms + ' milliseconds to respond.');
 });
 ```
@@ -116,10 +116,10 @@ DEBUG=orchard* npm test
 
 ## Changes from v0
 
-- [breaking] Moved key-level options to third argument
+- [breaking] Moved key-level options to third argument of the cache call
 - [breaking] `#prune` (`#evict`) and `#prunePattern` (`#evictPattern`) consolidated into `#del`
 - [breaking] Renamed instance and key-level arguments (e.g. `keyPrefix` &rarr; `prefix`, `expires` &rarr; `ttl`)
-- [minor] Generalized key and priming values to any primitive, promise, or function
+- [minor] Generalized key and priming values to any primitive, Promise, or Function
 - [patch] Addressed thundering herd risk
 - [patch] Upgraded dependencies
 - [patch] Reorganized and expanded test suite
