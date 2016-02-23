@@ -185,13 +185,4 @@ describe('cache', function () {
       expect(spyOk.callCount).to.equal(0);
     });
   });
-
-  it('tags thrown errors as `fromOrchard`', function () {
-    var key = 'jaeger';
-    var primingValue = sinon.stub().throws(TypeError);
-
-    return cache(key, primingValue).catch(function (err) {
-      expect(err.fromOrchard).to.equal(true);
-    });
-  });
 });

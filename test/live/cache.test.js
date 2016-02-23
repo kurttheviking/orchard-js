@@ -12,11 +12,10 @@ describe('cache', function () {
   var cache;
   var conn = redis.createClient();
 
-  // var get = BPromise.promisify(conn.get, { context: conn });
   var keys = BPromise.promisify(conn.keys, { context: conn });
 
   beforeEach(function (done) {
-    cache = require('../../index')({ scanCount: 1 });
+    cache = require('../../index')();
     conn.flushdb(done);
   });
 
@@ -55,6 +54,8 @@ describe('cache', function () {
     var key = 'kaiju';
     var value = ['Godzilla', 'Mothra', 'Gamera', 'Rodan'];
 
+    cache = require('../../index')({ scanCount: 1 });
+
     return BPromise.all([
       cache(key + 'a', value),
       cache(key + 'b', value)
@@ -73,6 +74,8 @@ describe('cache', function () {
   it('deletes only matched keys from a pattern', function () {
     var key = 'kaiju';
     var value = ['Godzilla', 'Mothra', 'Gamera', 'Rodan'];
+
+    cache = require('../../index')({ scanCount: 1 });
 
     return BPromise.all([
       cache('monsters', value),

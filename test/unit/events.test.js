@@ -120,29 +120,14 @@ describe('events', function () {
     expect(spy.callCount).to.equal(1);
   });
 
-  it('throws on redis:error events', function () {
+  it('emits redis:error events', function () {
     var spy = sinon.spy();
 
-    try {
-      cache.on('redis:error', spy);
-      redisEvents.error('halt');
-    } catch (err) {
-      expect(err).to.match(/halt/);
-    }
+    cache.on('redis:error', spy);
+
+    redisEvents.error(new Error('halt'));
 
     expect(spy.callCount).to.equal(1);
-  });
-
-  it('traps error events if passed option.allowFailthrough', function () {
-    var spy = sinon.spy();
-
-    cache = require('../../index')({ allowFailthrough: true });
-
-    function test() {
-      cache.on('redis:error', spy);
-      redisEvents.error(new Error('halt'));
-    }
-
-    expect(test).to.not.throw(Error);
+    expect(spy.args[0][0]).to.match(/halt/);
   });
 });

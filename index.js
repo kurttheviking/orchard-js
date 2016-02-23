@@ -14,6 +14,8 @@ function Orchard(opts) {
   var options = opts || {};
   var self = this;
 
+  var isConnected = false;
+
   var bus;
   var pending = {};
   var redis;
@@ -34,6 +36,8 @@ function Orchard(opts) {
   redis = new RedisClient(self.url);
 
   redis.on('connect', function emitRedisConnect() {
+    isConnected = true;
+
     debug('redis connected');
     bus.emit('redis:connect');
   });
@@ -54,15 +58,10 @@ function Orchard(opts) {
   });
 
   redis.on('error', function emitReddisError(err) {
-    var orchardError = err;
+    isConnected = false;
 
-    debug('redis error', orchardError);
-    bus.emit('redis:error');
-
-    if (!self.allowFailthrough) {
-      orchardError.fromOrchard = true;
-      throw orchardError;
-    }
+    debug('redis error', err);
+    bus.emit('redis:error', err);
   });
 
   function scanAndDelete(cursor, removedCt, iterationCommands) {
@@ -112,9 +111,19 @@ function Orchard(opts) {
     }
 
     return resolveKey(key, { prefix: self.prefix }).then(function getValue(parsedKey) {
+      var get;
+
       debug('[%s] resolved key: %s', reqId, parsedKey);
 
-      return redis.get(parsedKey).then(function checkCacheValue(remoteValue) {
+      if (isConnected || !self.allowFailthrough) {
+        get = redis.get(parsedKey);
+      } else {
+        get = BPromise.resolve(null);
+      }
+
+      debug('[%s] is connected? %s', reqId, isConnected);
+
+      return get.then(function checkCacheValue(remoteValue) {
         debug('[%s] remote value: %s', reqId, remoteValue);
 
         if (remoteValue && !config.forceUpdate) {
@@ -130,6 +139,15 @@ function Orchard(opts) {
         )
         .then(function cacheValue(parsedValue) {
           debug('[%s] primed value: %s', reqId, parsedValue);
+
+          if (!isConnected && self.allowFailthrough) {
+            debug('[%s] skipping set and ttl operations');
+
+            emit(parsedKey, false);
+            delete pending[key];
+
+            return parsedValue;
+          }
 
           return redis.set(
             parsedKey,
@@ -149,24 +167,16 @@ function Orchard(opts) {
 
             return parsedValue;
           });
+        })
+        .catch(function handleError(err) {
+          debug('[%s] cache error: %s', reqId, err);
+
+          delete pending[key];
+
+          throw err;
         });
 
         return pending[key];
-      })
-      .catch(function handleError(err) {
-        var orchardError = err;
-
-        debug('[%s] cache error: %s', reqId, orchardError);
-
-        delete pending[key];
-
-        if (self.allowFailthrough) {
-          return resolveValue(parsedKey, value);
-        }
-
-        orchardError.fromOrchard = true;
-
-        throw orchardError;
       });
     });
   }
