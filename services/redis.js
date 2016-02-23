@@ -17,6 +17,8 @@ function RedisClient(uri) {
     this.client.select(params.db);
   }
 
+  this.on = this.client.on.bind(this.client);
+
   this.del = BPromise.promisify(this.client.del, { context: this.client });
   this.expire = BPromise.promisify(this.client.expire, { context: this.client });
   this.get = BPromise.promisify(this.client.get, { context: this.client });

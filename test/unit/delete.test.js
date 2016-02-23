@@ -25,6 +25,7 @@ describe('#del', function () {
     createClient = redis.createClient;
 
     redis.createClient = function () {
+      arguments[2].fast = true;
       client = createClient.apply(redis, arguments);
 
       sinon.spy(client, 'del');

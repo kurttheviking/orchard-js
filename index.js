@@ -33,6 +33,38 @@ function Orchard(opts) {
   bus = new EventEmitter();
   redis = new RedisClient(self.url);
 
+  redis.on('connect', function handleRedisEvent() {
+    debug('redis connected');
+    bus.emit('redis:connect');
+  });
+
+  redis.on('idle', function handleRedisEvent() {
+    debug('redis idle');
+    bus.emit('redis:idle');
+  });
+
+  redis.on('ready', function handleRedisEvent() {
+    debug('redis ready');
+    bus.emit('redis:ready');
+  });
+
+  redis.on('reconnecting', function handleRedisEvent() {
+    debug('redis reconnecting');
+    bus.emit('redis:reconnecting');
+  });
+
+  redis.on('error', function handleRedisEvent(err) {
+    var orchardError = err;
+
+    debug('redis error', orchardError);
+    bus.emit('redis:error');
+
+    if (!self.allowFailthrough) {
+      orchardError.fromOrchard = true;
+      throw orchardError;
+    }
+  });
+
   function scanAndDelete(cursor, removedCt, iterationCommands) {
     // [KE] make the current cursor the first element of the executed command array
     //      without modifying the original command array

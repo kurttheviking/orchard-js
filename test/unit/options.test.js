@@ -24,6 +24,7 @@ describe('options', function () {
     createClient = redis.createClient;
 
     redis.createClient = function () {
+      arguments[2].fast = true;
       client = createClient.apply(redis, arguments);
 
       sinon.spy(client, 'expire');
@@ -89,7 +90,7 @@ describe('options', function () {
 
     expect(args[0]).to.equal(30);
     expect(args[1]).to.equal('8.6.7.5');
-    expect(args[2]).to.deep.equal({ auth_pass: 'jenny' });
+    expect(args[2].auth_pass).to.equal('jenny');
   });
 
   it('bad options.url throws synchronously', function () {
@@ -111,7 +112,7 @@ describe('options', function () {
 
     expect(args[0]).to.equal(6379);
     expect(args[1]).to.equal('localhost');
-    expect(args[2]).to.deep.equal({ auth_pass: null });
+    expect(args[2].auth_pass).to.equal(null);
   });
 
   it('accepts options.scanCount', function () {

@@ -7,82 +7,128 @@ var sinon = require('sinon');
 var expect = chai.expect;
 
 describe('events', function () {
-  describe('cache:hit', function () {
-    var cache;
+  var cache;
+  var client;
+  var createClient;
+  var redisEvents = {};
+  var redis = require('fakeredis');
+  var value = 'mark iii';
 
-    var key = 'jaeger';
-    var value = 'mark iii';
+  createClient = redis.createClient;
+  redis.createClient = function () {
+    arguments[2].fast = true;
+    client = createClient.apply(redis, arguments);
 
-    beforeEach(function () {
-      mockery.enable({
-        warnOnReplace: false,
-        warnOnUnregistered: false,
-        useCleanCache: true
-      });
+    client.on = function on(evt, listener) {
+      redisEvents[evt] = listener;
+    };
 
-      mockery.registerMock('redis', require('fakeredis'));
-      cache = require('../../index')();
+    return client;
+  };
+
+  beforeEach(function () {
+    mockery.enable({
+      warnOnReplace: false,
+      warnOnUnregistered: false,
+      useCleanCache: true
     });
 
-    it('emits with correct properties', function (done) {
-      var start = Date.now();
-      var spy = sinon.spy();
+    mockery.registerMock('redis', redis);
+    cache = require('../../index')();
+  });
 
-      cache.on('cache:hit', spy);
+  it('emits cache:hit', function (done) {
+    var key = 'jaeger';
+    var start = Date.now();
+    var spy = sinon.spy();
 
-      cache(key, value).then(function () {
-        return cache(key, value).delay(50);
-      })
-      .then(function () {
-        var data = spy.args[0][0];
+    cache.on('cache:hit', spy);
 
-        expect(spy.callCount).to.equal(1);
+    cache(key, value).then(function () {
+      return cache(key, value).delay(10);
+    })
+    .then(function () {
+      var data = spy.args[0][0];
 
-        expect(data.key).to.equal(key);
-        expect(data.ms).to.be.above(0);
-        expect(data.ms).to.be.below(Date.now() - start);
+      expect(spy.callCount).to.equal(1);
 
-        done();
-      });
+      expect(data.key).to.equal(key);
+      expect(data.ms).to.be.above(0);
+      expect(data.ms).to.be.below(Date.now() - start);
+
+      done();
     });
   });
 
-  describe('cache:miss', function () {
-    var cache;
+  it('emits cache:miss', function (done) {
+    var key = Date.now().toString(36);
+    var start = Date.now();
+    var spy = sinon.spy();
 
-    var key;
-    var value = 'mark iii';
+    cache.on('cache:miss', spy);
 
-    beforeEach(function () {
-      key = Date.now().toString(36);
+    cache(key, value).delay(10).then(function () {
+      var data = spy.args[0][0];
 
-      mockery.enable({
-        warnOnReplace: false,
-        warnOnUnregistered: false,
-        useCleanCache: true
-      });
+      expect(spy.callCount).to.equal(1);
 
-      mockery.registerMock('redis', require('fakeredis'));
-      cache = require('../../index')();
+      expect(data.key).to.equal(key);
+      expect(data.ms).to.be.above(0);
+      expect(data.ms).to.be.below(Date.now() - start);
+
+      done();
     });
+  });
 
-    it('emits with correct properties', function (done) {
-      var start = Date.now();
-      var spy = sinon.spy();
+  it('emits redis:connect events', function () {
+    var key = Date.now().toString(36);
+    var spy = sinon.spy();
 
-      cache.on('cache:miss', spy);
+    cache.on('redis:connect', spy);
 
-      cache(key, value).delay(50).then(function () {
-        var data = spy.args[0][0];
+    redisEvents.connect();
 
-        expect(spy.callCount).to.equal(1);
+    return cache(key, value).then(function () {
+      expect(spy.callCount).to.equal(1);
+    });
+  });
 
-        expect(data.key).to.equal(key);
-        expect(data.ms).to.be.above(0);
-        expect(data.ms).to.be.below(Date.now() - start);
+  it('emits redis:idle events', function () {
+    var key = Date.now().toString(36);
+    var spy = sinon.spy();
 
-        done();
-      });
+    cache.on('redis:idle', spy);
+
+    redisEvents.idle();
+
+    return cache(key, value).then(function () {
+      expect(spy.callCount).to.equal(1);
+    });
+  });
+
+  it('emits redis:ready events', function () {
+    var key = Date.now().toString(36);
+    var spy = sinon.spy();
+
+    cache.on('redis:ready', spy);
+
+    redisEvents.ready();
+
+    return cache(key, value).then(function () {
+      expect(spy.callCount).to.equal(1);
+    });
+  });
+
+  it('emits redis:reconnecting events', function () {
+    var key = Date.now().toString(36);
+    var spy = sinon.spy();
+
+    cache.on('redis:reconnecting', spy);
+
+    redisEvents.reconnecting();
+
+    return cache(key, value).then(function () {
+      expect(spy.callCount).to.equal(1);
     });
   });
 });
