@@ -93,7 +93,7 @@ The cache instance is also an [event emitter](http://nodejs.org/api/events.html#
 
 Note: `ms` is milliseconds elapsed between cache invocation and final resolution of the cached value.
 
-#### cache:miss
+#### `cache:miss`
 
 ```js
 {
@@ -102,7 +102,42 @@ Note: `ms` is milliseconds elapsed between cache invocation and final resolution
 }
 ```
 
-Note: `ms` is milliseconds elapsed between cache invocation and final resolution of the priming value.
+Note: `ms` is milliseconds elapsed between cache invocation and final resolution of the priming value (after being saved in Redis).
+
+#### `cache:miss`
+
+```js
+{
+  'key': <String>,
+  'ms': <Number:Integer:Milliseconds>
+}
+```
+
+#### `redis:connect`
+
+*No event data*
+
+#### `redis:error`
+
+```js
+<Error>{
+  code: <String>,
+  errno: <String:SystemErrNo>,
+  syscall: <String>
+}
+```
+
+#### `redis:idle`
+
+*No event data*
+
+#### `redis:ready`
+
+*No event data*
+
+#### `redis:reconnecting`
+
+*No event data*
 
 
 ## Debug
@@ -138,21 +173,19 @@ To run the linter and unit test suite:
 npm test
 ```
 
-Or, to determine unit test coverage:
+This project maintains 100% coverage of statements, branches, and functions. To determine unit test coverage:
 
 ```sh
 npm run coverage
 ```
 
-This project maintains 100% coverage of statements, branches, and functions.
-
-Finally, an integrated test suite executes tests against a live, local database (`redis://localhost:6379/0`):
+In addition, an integrated test suite executes a subset of tests against a live, local database (`redis://localhost:6379/0`):
 
 ```sh
 npm run test-live
 ```
 
-**WARNING: the integrated test suite flushes Redis** before each test sequence.
+**WARNING: the integrated test suite flushes Redis** before each test sequence. Furthermore, the integrated test suite expects connections to `redis://localhost:80/0` should fail.
 
 
 ## Orchard?

@@ -38,7 +38,7 @@ function Orchard(opts) {
   redis.on('connect', function emitRedisConnect() {
     isConnected = true;
 
-    debug('redis connected');
+    debug('redis connect');
     bus.emit('redis:connect');
   });
 
