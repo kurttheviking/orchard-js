@@ -122,13 +122,19 @@ function Orchard(opts) {
         return pending[key];
       })
       .catch(function handleError(err) {
-        debug('[%s] cache error: %s', reqId, err);
+        var orchardError = err;
+
+        debug('[%s] cache error: %s', reqId, orchardError);
 
         delete pending[key];
 
         if (self.allowFailthrough) {
           return resolveValue(parsedKey, value);
         }
+
+        orchardError.fromOrchard = true;
+
+        throw orchardError;
       });
     });
   }

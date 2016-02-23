@@ -133,10 +133,10 @@ describe('cache', function () {
     var key = 'jaeger';
     var primingValue = sinon.stub().throws(TypeError);
 
-    return cache(key, primingValue).then(function () {
+    return cache(key, primingValue).catch(function () {
       return cache(key, primingValue);
     })
-    .then(function () {
+    .catch(function () {
       expect(primingValue.callCount).to.equal(2);
     });
   });
@@ -156,6 +156,41 @@ describe('cache', function () {
     return cache('kaiju', value, { ttl: ttl }).then(function () {
       expect(client.expire.callCount).to.equal(1);
       expect(client.expire.args[0][1]).to.equal(parseInt(ttl / 1000, 10));
+    });
+  });
+
+  it('allows standard Promise rejection catch on priming errors', function () {
+    var key = 'jaeger';
+    var primingValue = sinon.stub().throws(TypeError);
+
+    var spyOk = sinon.stub().returns(true);
+    var spyError = sinon.stub().returns(true);
+
+    return cache(key, primingValue).then(spyOk, spyError).then(function () {
+      expect(spyError.callCount).to.equal(1);
+      expect(spyOk.callCount).to.equal(0);
+    });
+  });
+
+  it('allows Bluebird catch on priming errors', function () {
+    var key = 'jaeger';
+    var primingValue = sinon.stub().throws(TypeError);
+
+    var spyOk = sinon.stub().returns(true);
+    var spyError = sinon.stub().returns(true);
+
+    return cache(key, primingValue).then(spyOk).catch(spyError).then(function () {
+      expect(spyError.callCount).to.equal(1);
+      expect(spyOk.callCount).to.equal(0);
+    });
+  });
+
+  it('tags thrown errors as `fromOrchard`', function () {
+    var key = 'jaeger';
+    var primingValue = sinon.stub().throws(TypeError);
+
+    return cache(key, primingValue).catch(function (err) {
+      expect(err.fromOrchard).to.equal(true);
     });
   });
 });
