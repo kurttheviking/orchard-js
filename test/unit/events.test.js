@@ -123,12 +123,14 @@ describe('events', function () {
   it('throws on redis:error events', function () {
     var spy = sinon.spy();
 
-    function test() {
+    try {
       cache.on('redis:error', spy);
-      redisEvents.error(new Error('halt'));
+      redisEvents.error('halt');
+    } catch (err) {
+      expect(err).to.match(/halt/);
     }
 
-    expect(test).to.match(/halt/);
+    expect(spy.callCount).to.equal(1);
   });
 
   it('traps error events if passed option.allowFailthrough', function () {

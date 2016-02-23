@@ -33,27 +33,27 @@ function Orchard(opts) {
   bus = new EventEmitter();
   redis = new RedisClient(self.url);
 
-  redis.on('connect', function handleRedisEvent() {
+  redis.on('connect', function emitRedisConnect() {
     debug('redis connected');
     bus.emit('redis:connect');
   });
 
-  redis.on('idle', function handleRedisEvent() {
+  redis.on('idle', function emitRedisIdle() {
     debug('redis idle');
     bus.emit('redis:idle');
   });
 
-  redis.on('ready', function handleRedisEvent() {
+  redis.on('ready', function emitRedisReady() {
     debug('redis ready');
     bus.emit('redis:ready');
   });
 
-  redis.on('reconnecting', function handleRedisEvent() {
+  redis.on('reconnecting', function emitRedisReconnecting() {
     debug('redis reconnecting');
     bus.emit('redis:reconnecting');
   });
 
-  redis.on('error', function handleRedisEvent(err) {
+  redis.on('error', function emitReddisError(err) {
     var orchardError = err;
 
     debug('redis error', orchardError);
