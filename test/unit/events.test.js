@@ -81,54 +81,66 @@ describe('events', function () {
   });
 
   it('emits redis:connect events', function () {
-    var key = Date.now().toString(36);
     var spy = sinon.spy();
 
     cache.on('redis:connect', spy);
 
     redisEvents.connect();
 
-    return cache(key, value).then(function () {
-      expect(spy.callCount).to.equal(1);
-    });
+    expect(spy.callCount).to.equal(1);
   });
 
   it('emits redis:idle events', function () {
-    var key = Date.now().toString(36);
     var spy = sinon.spy();
 
     cache.on('redis:idle', spy);
 
     redisEvents.idle();
 
-    return cache(key, value).then(function () {
-      expect(spy.callCount).to.equal(1);
-    });
+    expect(spy.callCount).to.equal(1);
   });
 
   it('emits redis:ready events', function () {
-    var key = Date.now().toString(36);
     var spy = sinon.spy();
 
     cache.on('redis:ready', spy);
 
     redisEvents.ready();
 
-    return cache(key, value).then(function () {
-      expect(spy.callCount).to.equal(1);
-    });
+    expect(spy.callCount).to.equal(1);
   });
 
   it('emits redis:reconnecting events', function () {
-    var key = Date.now().toString(36);
     var spy = sinon.spy();
 
     cache.on('redis:reconnecting', spy);
 
     redisEvents.reconnecting();
 
-    return cache(key, value).then(function () {
-      expect(spy.callCount).to.equal(1);
-    });
+    expect(spy.callCount).to.equal(1);
+  });
+
+  it('throws on redis:error events', function () {
+    var spy = sinon.spy();
+
+    function test() {
+      cache.on('redis:error', spy);
+      redisEvents.error(new Error('halt'));
+    }
+
+    expect(test).to.match(/halt/);
+  });
+
+  it('traps error events if passed option.allowFailthrough', function () {
+    var spy = sinon.spy();
+
+    cache = require('../../index')({ allowFailthrough: true });
+
+    function test() {
+      cache.on('redis:error', spy);
+      redisEvents.error(new Error('halt'));
+    }
+
+    expect(test).to.not.throw(Error);
   });
 });
