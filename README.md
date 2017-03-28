@@ -1,7 +1,5 @@
-orchard
+orchard [![Build Status](https://travis-ci.org/kurttheviking/orchard-js.svg?branch=master)](https://travis-ci.org/kurttheviking/orchard-js)
 =======
-
-[![Build Status](https://travis-ci.org/kurttheviking/orchard.svg?branch=master)](https://travis-ci.org/kurttheviking/orchard)
 
 Application-controlled, Redis-backed, Promises/A+ read-through caching
 
