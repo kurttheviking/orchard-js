@@ -1,12 +1,14 @@
 /* global describe, it, beforeEach, afterEach */
-/* eslint func-names: 0*/
-var chai = require('chai');
-var mockery = require('mockery');
-var sinon = require('sinon');
+/* eslint-disable global-require, import/no-extraneous-dependencies, strict */
 
-var expect = chai.expect;
+'use strict';
 
-describe('options', function () {
+const expect = require('chai').expect;
+const mockery = require('mockery');
+const sinon = require('sinon');
+const uuid = require('uuid-with-v6');
+
+describe('Orchard options', () => {
   var client;
   var createClient;
   var redis;

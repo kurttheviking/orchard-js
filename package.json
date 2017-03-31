@@ -1,58 +1,57 @@
 {
   "name": "orchard",
-  "description": "Application-controlled, Redis-backed, Promises/A+ read-through caching",
   "version": "1.2.0",
-  "license": "MIT",
+  "description": "Functional, Redis-backed read-through caching",
   "main": "index.js",
+  "scripts": {
+    "coverage": "./node_modules/istanbul/lib/cli.js cover --report=json-summary --report=html _mocha ./test/unit -- --recursive",
+    "coveralls": "istanbul cover ./node_modules/mocha/bin/_mocha --report lcovonly ./test/unit -- --recursive -R spec && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
+    "test": "node node_modules/mocha/bin/mocha ./test --recursive",
+    "test-live": "node node_modules/mocha/bin/mocha ./test/live --recursive",
+    "test-unit": "node node_modules/mocha/bin/mocha ./test/unit --recursive"
+  },
+  "engines": {
+    "node": ">4.x"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kurttheviking/orchard-js.git"
+  },
   "keywords": [
     "cache",
     "redis",
     "read-through cache",
-    "redis cache",
-    "promises-aplus"
+    "redis cache"
   ],
   "author": {
     "name": "Kurt Ericson",
     "email": "github@kurttheviking.com",
     "url": "http://github.com/kurttheviking"
   },
-  "contributors": [
-    {
-      "name": "Kurt Ericson",
-      "email": "github@kurttheviking.com",
-      "url": "https://github.com/kurttheviking"
-    }
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/kurttheviking/orchard.git"
-  },
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/kurttheviking/orchard/issues"
+    "url": "https://github.com/kurttheviking/orchard-js/issues"
   },
-  "homepage": "https://github.com/kurttheviking/orchard#readme",
+  "homepage": "https://github.com/kurttheviking/orchard-js#readme",
   "dependencies": {
-    "bluebird": "3.3.1",
-    "debug": "2.2.0",
-    "interval": "0.1.1",
-    "redis": "2.4.2",
-    "redisuri": "1.1.0",
-    "uuid": "2.0.1"
+    "debug": "2.6.3",
+    "es6-promisify": "5.0.0",
+    "lru-cache": "4.0.2",
+    "ms": "1.0.0",
+    "redis": "2.7.1",
+    "uuid-with-v6": "1.0.2"
   },
   "devDependencies": {
     "chai": "3.5.0",
-    "eslint": "1.10.3",
-    "eslint-config-airbnb": "5.0.0",
-    "fakeredis": "1.0.2",
-    "mocha-eslint": "1.0.0",
-    "mockery": "1.4.0",
-    "istanbul": "0.4.2",
-    "mocha": "2.4.5",
-    "sinon": "1.17.3"
-  },
-  "scripts": {
-    "coverage": "./node_modules/istanbul/lib/cli.js cover --report=json-summary --report=html _mocha ./test/unit -- --recursive",
-    "test": "node node_modules/mocha/bin/mocha ./test/unit --recursive",
-    "test-live": "node node_modules/mocha/bin/mocha ./test/live --recursive"
+    "coveralls": "2.12.0",
+    "eslint": "3.9.1",
+    "eslint-config-airbnb-base": "10.0.1",
+    "eslint-plugin-import": "2.2.0",
+    "fakeredis": "2.0.0",
+    "istanbul": "0.4.5",
+    "mocha": "3.1.2",
+    "mocha-eslint": "3.0.1",
+    "mockery": "2.0.0",
+    "sinon": "1.17.7"
   }
 }
