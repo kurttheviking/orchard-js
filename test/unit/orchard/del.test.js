@@ -43,6 +43,7 @@ describe('Orchard#del', () => {
   });
 
   afterEach(() => {
+    mockery.deregisterAll();
     mockery.disable();
   });
 
@@ -118,7 +119,25 @@ describe('Orchard#del', () => {
     });
   });
 
-  it('accepts a scanCount option', () => {
+  it('supports a "prefix" option', () => {
+    const prefix = uuid.v4();
+
+    const orchard = new Orchard({ prefix });
+
+    const key = uuid.v4();
+    const value = [uuid.v4(), uuid.v4()];
+
+    return orchard(key, value).then(() => orchard.del(key))
+    .then(() => {
+      expect(redisClient.del.callCount).to.equal(1);
+
+      const args = redisClient.del.getCall(0).args;
+
+      expect(args[0]).to.equal(`${prefix}:${key}`);
+    });
+  });
+
+  it('accepts a "scanCount" option', () => {
     const orchard = new Orchard({ scanCount: 1 });
 
     const keyA = `k:${uuid.v6()}`;

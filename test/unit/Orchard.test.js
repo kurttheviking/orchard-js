@@ -43,6 +43,7 @@ describe('Orchard', () => {
   });
 
   afterEach(() => {
+    mockery.deregisterAll();
     mockery.disable();
   });
 
@@ -163,6 +164,144 @@ describe('Orchard', () => {
 
     return orchard(uuid.v4()).catch((err) => {
       expect(err).to.match(/missing value/);
+    });
+  });
+});
+
+describe('Orchard, database disconnect', () => {
+  let Orchard;
+  let Redis;
+  let redis;
+
+  beforeEach(() => {
+    mockery.enable({
+      warnOnReplace: false,
+      warnOnUnregistered: false,
+      useCleanCache: true
+    });
+
+    redis = {
+      on: sinon.spy()
+    };
+
+    Redis = sinon.stub().returns(redis);
+
+    mockery.registerMock('./services/Redis', Redis);
+
+    Orchard = require('../../index');
+  });
+
+  afterEach(() => {
+    mockery.deregisterAll();
+    mockery.disable();
+  });
+
+  it('resolves to an input value', () => {
+    const orchard = new Orchard();
+
+    const value = [uuid.v4(), uuid.v4()];
+
+    return orchard(uuid.v4(), value).then((out) => {
+      expect(out).to.deep.equal(value);
+    });
+  });
+
+  it('invokes the priming function on every call', () => {
+    const orchard = new Orchard();
+
+    const key = uuid.v4();
+    const value = sinon.stub().returns([uuid.v4(), uuid.v4()]);
+
+    return orchard(key, value).then(() => orchard(key, value))
+    .then(() => {
+      expect(value.callCount).to.equal(2);
+    });
+  });
+});
+
+describe('Orchard, database error', () => {
+  let Orchard;
+  let Redis;
+
+  beforeEach(() => {
+    mockery.enable({
+      warnOnReplace: false,
+      warnOnUnregistered: false,
+      useCleanCache: true
+    });
+
+    Redis = sinon.stub().returns({
+      on: (evt, cb) => { if (evt === 'error') { cb(); } }
+    });
+
+    mockery.registerMock('./services/Redis', Redis);
+
+    Orchard = require('../../index');
+  });
+
+  afterEach(() => {
+    mockery.deregisterAll();
+    mockery.disable();
+  });
+
+  it('resolves to an input value', () => {
+    const orchard = new Orchard();
+
+    const value = [uuid.v4(), uuid.v4()];
+
+    return orchard(uuid.v4(), value).then((out) => {
+      expect(out).to.deep.equal(value);
+    });
+  });
+
+  it('invokes the priming function on every call', () => {
+    const orchard = new Orchard();
+
+    const key = uuid.v4();
+    const value = sinon.stub().returns([uuid.v4(), uuid.v4()]);
+
+    return orchard(key, value).then(() => orchard(key, value))
+    .then(() => {
+      expect(value.callCount).to.equal(2);
+    });
+  });
+});
+
+describe('Orchard, ttl error', () => {
+  let Orchard;
+  let Redis;
+
+  beforeEach(() => {
+    mockery.enable({
+      warnOnReplace: false,
+      warnOnUnregistered: false,
+      useCleanCache: true
+    });
+
+    Redis = sinon.stub().returns({
+      on: (evt, cb) => { if (evt === 'ready') { cb(); } },
+      get: sinon.stub().returns(Promise.resolve(null)),
+      set: sinon.stub().returns(Promise.resolve(null)),
+      expire: sinon.stub().returns(Promise.reject(new Error('fail')))
+    });
+
+    mockery.registerMock('./services/Redis', Redis);
+
+    Orchard = require('../../index');
+  });
+
+  afterEach(() => {
+    mockery.deregisterAll();
+    mockery.disable();
+  });
+
+  it('resolves to an input value', () => {
+    const orchard = new Orchard({ ttl: '1d' });
+
+    const value = [uuid.v4(), uuid.v4()];
+
+    return orchard(uuid.v4(), value).then((out) => {
+      expect(out).to.deep.equal(value);
     });
   });
 });
