@@ -46,7 +46,7 @@ orchard(key, () => value).then(console.log);
 
 ### `Orchard([options])`
 
-This module exports a constructor. Instantiate an orchard cache with desired `options`:
+This module exports a constructor. Instantiate an Orchard cache with desired `options`:
 
 ```js
 const Orchard = require('orchard');
