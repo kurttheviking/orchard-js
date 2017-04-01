@@ -130,7 +130,7 @@ The cache instance is also an [event emitter](http://nodejs.org/api/events.html#
 }
 ```
 
-`ms` is milliseconds elapsed between cache invocation and resolution of the cached value.
+`ms` is milliseconds elapsed between invocation and resolution of the cached value.
 
 #### `cache:miss`
 
@@ -142,7 +142,7 @@ The cache instance is also an [event emitter](http://nodejs.org/api/events.html#
 }
 ```
 
-`ms` is milliseconds elapsed between cache invocation and resolution of the priming value after the database write succeeds.
+`ms` is milliseconds elapsed between invocation and resolution of the priming value after the database write succeeds.
 
 #### `redis:error`
 
