@@ -1,91 +1,133 @@
 orchard [![Build Status](https://travis-ci.org/kurttheviking/orchard-js.svg?branch=master)](https://travis-ci.org/kurttheviking/orchard-js)
 =======
 
-Functional, Redis-backed read-through caching
+Read-through, fail-through, Redis-backed caching
 
 
-## Use
+## Getting started
 
-First, instantiate the cache with desired [options](https://github.com/kurttheviking/orchard#options).
+### Prerequisites
 
-```js
-var Orchard = require('orchard');
-var options = {
-  keyPrefix: 'app-cache',
-  ttl: {hours: 1},
-  url: 'redis://auth@10.0.100.0:6379/1'
-};
+- Node.js 4.x (LTS), or newer
+- Redis 2.8, or newer
 
-var cache = Orchard(options);
+For local development, consider [Docker](https://www.docker.com/) for managing your Redis installation. First install the image:
+
+```sh
+docker run -d --name redis -p 6379:6379 redis:2.8
 ```
 
-Cache "getting" and "setting" takes place within a single call, promoting functional use. The `cache` instance is a Promise-returning function which takes two parameters: a cache `key` and a priming `value`.
+Then, run the image:
 
-```js
-cache(Promise.resolve('kaiju'), function (key) {
-  console.log("the invoked key is " + cacheKey);  // "the invoked key is dinosaurs"
-  return Promise.resolve(['Godzilla', 'Mothra', 'Rodan']);
-})
-.then(function (value) {
-  console.log("the cached value is " + value);  // "the resolved value is ['Godzilla', ...]"
-});
+```sh
+docker start redis
 ```
 
-## Options
+### Install
 
-| Option | Expected value |
-| :------- | :----------- |
-| `allowFailthrough` | By default, Orchard exposes connection and database errors from Redis via a rejected Promise. Set this option to `true` to ignore these errors and invoke the priming value without persisting the result when these errors occur. |
-| `keyPrefix` | A string that is prepended to all cache keys encountered by the `cache` instance. Useful if a single Redis database supports caching for multiple services. |
-| `scanCount` | A `Number` that hints Redis' `SCAN` command (e.g. within `del` described below). Defaults to 10, per Redis. |
-| `ttl` | By default, cached data never expires. Use this option to set a default [TTL](http://redis.io/commands/ttl) for all cached keys. Key-level expiration always supersedes this default. The value can be either a `Number` representing lifespan in milliseconds or a valid [interval object](https://www.npmjs.com/package/interval). |
-| `url` | A valid [Redis URI](https://npmjs.org/package/redisuri); defaults to 'redis://localhost:6379/0'. |
+Install with [npm](https://www.npmjs.com):
 
-Note: [Redis uses seconds for expiration timers](http://redis.io/commands/expire); Orchard internally converts `ttl` from milliseconds to seconds, rounding down.
+```sh
+npm install --save orchard
+```
+
+### Use
+
+```js
+const Orchard = require('orchard');
+
+const orchard = new Orchard();
+
+orchard(key, () => value).then(console.log);
+```
 
 
 ## API
 
-#### `cache(key, primingValue, [options])`
+### `Orchard([options])`
 
-Attempts to get the current value of `key` from the cache. If the key does not exist, the `primingValue` is determined and the underlying cache value is set. If the `primingValue` is a function, it is invoked with the resolved `key` as its single argument.
-
-Both `key` and `primingValue` can be a Boolean, Number, String, Array, Object, or a function that returns one of these primitives, or a Promise for one of these primitives. The `cache` instance stores a memo for a promised value while the value is being resolved in order to mitigate a [stampede](https://en.wikipedia.org/wiki/Cache_stampede) for the underlying `primingValue` at the expense of local memory. However, a stampede may still occur against a `key` function because it is invoked on each cache call. In most cases, this problem is mitigated by using a locally available key. If you plan to remotely resolve the key you may want to consider caching the key function as well.
-
-A rejected promise is returned if `key` is missing or if there is an error resolving the `primingValue`. Rejected cache calls are not persisted in Redis.
-
-At invocation, the following options are available:
-
-| Option | Expected value |
-| :------- | :----------- |
-| `forceUpdate` | Determine the priming value and update Redis ignoring any previously cached data |
-| `ttl` | Key-specific TTL override of the instance TTL; either a `Number` representing lifespan in milliseconds or a valid [interval object](https://www.npmjs.com/package/interval) |
-
-#### `cache#del(key)`
-
-Returns a promise that resolves to the number of removed keys after deleting `key` from Redis. If the first or last character of the resolved `key` is an asterisk (`*`), the key is treated as a pattern and the `SCAN` command is used to find all matching keys via Redis' `MATCH` option and either the default iteration count or the configured `scanCount`. The instance's `keyPrefix` is not applied in cases with a leading `MATCH` pattern indicator (`*`).
-
-#### `cache#on(eventName, eventHandler)`
-
-`eventName` is a string, corresponding to a [supported event](https://github.com/kurttheviking/orchard#emitted-events). `eventHandler` is a function which responds to the data provided by the target event.
+This module exports a constructor. Instantiate an orchard cache with desired `options`:
 
 ```js
-cache.on('cache:hit', function eventHandler(data) {
-  console.log('The cache took ' + data.ms + ' milliseconds to respond.');
-});
+const Orchard = require('orchard');
+
+const options = {...};
+
+const orchard = new Orchard(options);
 ```
 
+#### Options
 
-## Emitted events
+| Option | Type | Description | Default |
+| :----- | :--- | :---------- | :------ |
+| `herdCacheParams` | `Object` | Parameters passed to the internal, [in-memory LRU cache](https://www.npmjs.com/package/lru-cache
+) | `{ max: 1024, maxAge: 60000 }` |
+| `prefix` | `String` | Prepended to resolved cache keys; use if a single database supports multiple caching services | *None* |
+| `scanCount` | `Number` | Hints Redis' `SCAN` command during keyspace enumeration (e.g. with delete) | `10` |
+| `ttl` | `String` or `Number` | Sets expiration for a cached value, a `Number` is treated as milliseconds and a `String` is treated as an [`ms` duration](https://www.npmjs.com/package/ms) | *None* |
+| `url` | `String` | Redis URI with required authentication | `redis://localhost:6379` |
 
-The cache instance is also an [event emitter](http://nodejs.org/api/events.html#events_class_events_eventemitter) which provides an `on` method against which the implementing application can listen for the below events.
+Notes:
 
-#### cache:hit
+- `herdCacheParams`: To mitigate [thundering herd risks](https://en.wikipedia.org/wiki/Thundering_herd_problem), Orchard holds a key in memory while initially resolving the priming value; subsequent calls for that value receive the same `Promise` until the value is resolved. This cache is pruned to avoid unnecessary memory consumption.
+- `ttl`: Redis uses [seconds for expiration timers](https://redis.io/commands/expire); Orchard converts `ttl` from milliseconds to seconds, rounding down.
+
+
+### `orchard(key, primingFunction)`
+
+```js
+const Orchard = require('orchard');
+
+const orchard = new Orchard(options);
+
+orchard(key, () => Promise.resolve(value)).then(console.log);
+```
+
+Attempts to get the current value of `key` from the cache. If the key does not exist, the `primingFunction` is invoked with the resolved key (including any `prefix`) and the cache value is set.
+
+`key` can be any one of:
+
+- a `String`
+- a `Promise` that resolves to a `String`
+- a `Function` that returns a `String`
+- a `Function` that returns a `Promise` that resolves to a `String`
+
+`primingFunction` can be any one of:
+
+- a `Function` that returns a [JSON-stringify](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify)-able `Object`
+- a `Function` that returns a `Promise` that resolves to a [JSON-stringify](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify)-able `Object`
+
+The promise is rejected if there is an error resolving the `primingFunction`. Rejected cache calls are not persisted.
+
+**Warning:** The `key` resolution process does not have the same stampede protections as the priming function. Instead, if `key` is a `Function`, it is invoked on every cache call. If you plan to remotely resolve the key you may want to consider caching the `key` function as well.
+
+### `cache#del(key)`
+
+```js
+const Orchard = require('orchard');
+
+const orchard = new Orchard(options);
+
+orchard.del(key).then(console.log);
+```
+
+Returns a promise that resolves to the number of removed keys after deleting `key` from the database. If the last character of the resolved `key` is an asterisk (`*`), the key is treated as a pattern to use with Redis' [`SCAN` and `MATCH` commands](https://redis.io/commands/scan).
+
+### `cache#on(eventName, eventListener)`
+
+```js
+cache.on('cache:hit', console.log);
+```
+
+The cache instance is also an [event emitter](http://nodejs.org/api/events.html#events_class_events_eventemitter) which provides an `on` method against which the implementing application can listen events. `eventName` is a `String` corresponding to a supported event. `eventListener` is a callback function invoked each time the event is triggered.
+
+#### `cache:hit`
 
 ```js
 {
-  'key': <String>,
-  'ms': <Number:Integer:Milliseconds>
+  requestId: <String:UUID>,
+  key: <String>,
+  ms: <Number:Integer:Milliseconds>
 }
 ```
 
@@ -95,80 +137,43 @@ Note: `ms` is milliseconds elapsed between cache invocation and final resolution
 
 ```js
 {
-  'key': <String>,
-  'ms': <Number:Integer:Milliseconds>
+  requestId: <String:UUID>,
+  key: <String>,
+  ms: <Number:Integer:Milliseconds>
 }
 ```
 
-Note: `ms` is milliseconds elapsed between cache invocation and final resolution of the priming value (after being saved in Redis).
-
-#### `cache:miss`
-
-```js
-{
-  'key': <String>,
-  'ms': <Number:Integer:Milliseconds>
-}
-```
-
-#### `redis:connect`
-
-*No event data*
+Note: `ms` is milliseconds elapsed between cache invocation and final resolution of the priming value after being saved in the database.
 
 #### `redis:error`
 
 ```js
 <Error>{
   code: <String>,
-  errno: <String:SystemErrNo>,
+  errno: <String>,
   syscall: <String>
 }
 ```
-
-#### `redis:idle`
-
-*No event data*
 
 #### `redis:ready`
 
 *No event data*
 
-#### `redis:reconnecting`
 
-*No event data*
+## Development
 
+### Tests
 
-## Debug
-
-This module is instrumented with [debug](https://www.npmjs.com/package/debug) to provide information about cache behavior during development. All debug invocations use the `orchard` prefix for targeted debug output:
-
-```js
-DEBUG=orchard* npm test
-```
-
-
-## Changes from v0
-
-- [breaking] Moved key-level options to third argument of the cache call
-- [breaking] `#prune` (`#evict`) and `#prunePattern` (`#evictPattern`) consolidated into `#del`
-- [breaking] Renamed instance and key-level arguments (e.g. `keyPrefix` &rarr; `prefix`, `expires` &rarr; `ttl`)
-- [minor] Generalized key and priming values to any primitive, Promise, or Function
-- [patch] Addressed thundering herd risk
-- [patch] Upgraded dependencies
-- [patch] Reorganized and expanded test suite
-
-
-## Contribute
-
-PRs are welcome! For bugs, please include a failing test which passes when your PR is applied.
-
-
-## Tests
-
-To run the linter and unit test suite:
+To run the full test suite, including unit tests and linting:
 
 ```sh
 npm test
+```
+
+To run the only the unit test suite:
+
+```sh
+npm run test-unit
 ```
 
 This project maintains 100% coverage of statements, branches, and functions. To determine unit test coverage:
@@ -177,17 +182,37 @@ This project maintains 100% coverage of statements, branches, and functions. To 
 npm run coverage
 ```
 
-In addition, an integrated test suite executes a subset of tests against a live, local database (`redis://localhost:6379/0`):
+To run the integrated test suit against a live Redis database (`redis://localhost:6379`):
 
 ```sh
-npm run test-live
+npm run test-integrated
 ```
 
-**WARNING: the integrated test suite flushes Redis** before each test sequence. Furthermore, the integrated test suite expects connections to `redis://localhost:80/0` should fail.
+**Warning:** The integrated test suite deletes all keys prefixed with `__ORCHARD_INTEGRATED_TEST`.
 
+### Debug
 
-## Orchard?
+This module is instrumented with [debug](https://www.npmjs.com/package/debug) to provide information about behavior during development. All debug invocations use the `orchard` prefix for targeted debug output:
 
-Originally, this project was named "redcache" -- a nice contrast to the in-memory caching layer [bluecache](https://github.com/agilemd/bluecache). Unfortunately, that project name was already claimed on npm (by another Redis-related project, unsurprisingly) so attention shifted to things that are red.
+```js
+DEBUG=orchard* npm test
+```
 
-"rubycache" confuses languages and "bloodcache" sounds like a bad sequel to a [SAW](http://www.imdb.com/title/tt0387564) movie or a decent prequel to a [Blade](http://www.imdb.com/title/tt0120611/) movie. In any case, apples are red and they grow in an orchard. And there you have it: [Orchard](https://www.npmjs.com/package/orchard), a place to grow, prune, and pick data &ndash; fresh from the source.
+### Contribute
+
+PRs are welcome! PRs must pass unit tests and linting prior to merge. For bugs, please include a failing test which passes when your PR is applied. To enable a git hook that runs `npm test` prior to pushing, `cd` into your repo and run:
+
+```sh
+touch .git/hooks/pre-push
+chmod +x .git/hooks/pre-push
+echo "npm test" > .git/hooks/pre-push
+```
+
+### Versioning
+
+This project follows [semantic versioning](http://semver.org/).
+
+### License
+
+- This module is licensed under the [MIT License](./LICENSE)
+- Redis is licensed under the ["Three Clause" BSD License](https://redis.io/topics/license)

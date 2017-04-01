@@ -7,7 +7,7 @@ const expect = require('chai').expect;
 const sinon = require('sinon');
 const uuid = require('uuid-with-v6');
 
-const PREFIX = '__ORCHARD_INTEGRATED_TESTS';
+const PREFIX = '__ORCHARD_INTEGRATED_TEST';
 
 describe('Orchard', () => {
   const Orchard = require('../index');
