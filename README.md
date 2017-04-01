@@ -82,7 +82,7 @@ const orchard = new Orchard(options);
 orchard(key, () => Promise.resolve(value)).then(console.log);
 ```
 
-Attempts to get the current value of `key` from the cache. If the key does not exist, the `primingFunction` is invoked with the resolved key (including any `prefix`) and the cache value is set.
+Returns a `Promise` that resolves to the final value of the `primingFunction`. Internally, Orchard attempts to get the current value of `key` from the database. If the key does not exist, the `primingFunction` is invoked with the resolved `key` (including any `prefix`) and the final value is set in the database for future use.
 
 `key` can be any one of:
 
