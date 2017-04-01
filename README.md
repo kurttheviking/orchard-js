@@ -1,4 +1,4 @@
-orchard [![Build Status](https://travis-ci.org/kurttheviking/orchard-js.svg?branch=master)](https://travis-ci.org/kurttheviking/orchard-js)
+orchard [![Build Status](https://travis-ci.org/kurttheviking/orchard-js.svg?branch=master)](https://travis-ci.org/kurttheviking/orchard-js) [![Coverage Status](https://coveralls.io/repos/github/kurttheviking/orchard-js/badge.svg?branch=master)](https://coveralls.io/github/kurttheviking/orchard-js?branch=master)
 =======
 
 Read-through, fail-through, Redis-backed caching
