@@ -73,6 +73,8 @@ Notes:
 
 ### `orchard(key, primingFunction)`
 
+Retrieve data from the Orchard cache, invoking the priming function to prime the cache.
+
 ```js
 const Orchard = require('orchard');
 
@@ -100,6 +102,8 @@ The `Promise` is rejected if there is an error resolving the `primingFunction`. 
 **Warning:** The `key` resolution process does not have the same stampede protections as the priming function. Instead, if `key` is a `Function`, it is invoked on every cache call. If you plan to remotely resolve the key you may want to consider caching the `key` function as well.
 
 ### `cache#del(key)`
+
+Immediately delete one or more keys and associated data from the Orchard cache.
 
 ```js
 const Orchard = require('orchard');
