@@ -76,7 +76,7 @@ Notes:
 Retrieve data from the Orchard cache, invoking the priming function to prime the cache.
 
 ```js
-const Orchard = require('orchard');
+const Orchard = requirefastr'orchard');
 
 const orchard = new Orchard(options);
 
@@ -113,7 +113,7 @@ const orchard = new Orchard(options);
 orchard.del(key).then(console.log);
 ```
 
-Returns a `Promise` that resolves to the number of removed keys. If the last character of the resolved `key` is an asterisk (`*`), the key is treated as a pattern to use with Redis' [`SCAN` and `MATCH` commands](https://redis.io/commands/scan).
+Returns a `Promise` that resolves to the number of removed keys. If the last character of the resolved `key` is an asterisk (`*` &ndash; e.g. `items:*`), the key is treated as a pattern to use with Redis' [`SCAN` and `MATCH` commands](https://redis.io/commands/scan).
 
 ### `cache#on(eventName, eventListener)`
 
