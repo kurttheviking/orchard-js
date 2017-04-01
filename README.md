@@ -60,8 +60,7 @@ const orchard = new Orchard(options);
 
 | Option | Type | Description | Default |
 | :----- | :--- | :---------- | :------ |
-| `herdCacheParams` | `Object` | Parameters passed to the internal, [in-memory LRU cache](https://www.npmjs.com/package/lru-cache
-) | `{ max: 1024, maxAge: 60000 }` |
+| `herdCacheParams` | `Object` | Parameters passed to the internal, [in-memory LRU cache](https://www.npmjs.com/package/lru-cache) | `{ max: 1024, maxAge: 60000 }` |
 | `prefix` | `String` | Prepended to resolved cache keys; use if a single database supports multiple caching services | *None* |
 | `scanCount` | `Number` | Hints Redis' `SCAN` command during keyspace enumeration (e.g. with delete) | `10` |
 | `ttl` | `String` or `Number` | Sets expiration for a cached value, a `Number` is treated as milliseconds and a `String` is treated as an [`ms` duration](https://www.npmjs.com/package/ms) | *None* |
