@@ -68,7 +68,7 @@ const orchard = new Orchard(options);
 
 Notes:
 
-- `herdCacheParams`: To mitigate [thundering herd risks](https://en.wikipedia.org/wiki/Thundering_herd_problem), Orchard holds a `key` in memory while initially resolving the priming value; subsequent calls using the same `key` (within the same process) receive the same `Promise` until the value is resolved. This cache is pruned to avoid unnecessary memory consumption.
+- `herdCacheParams`: To mitigate [thundering herd risks](https://en.wikipedia.org/wiki/Thundering_herd_problem), Orchard holds a `key` in memory while initially resolving the priming value; subsequent calls using the same `key` (within the same process) receive the same `Promise` until the value is resolved. This temporary cache is pruned to avoid unnecessary memory consumption.
 - `ttl`: Redis uses [seconds for expiration timers](https://redis.io/commands/expire); Orchard converts `ttl` from milliseconds to seconds, rounding down.
 
 ### `orchard(key, primingFunction)`
