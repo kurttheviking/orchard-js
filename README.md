@@ -117,6 +117,8 @@ Returns a `Promise` that resolves to the number of removed keys. If the last cha
 
 ### `cache#on(eventName, eventListener)`
 
+Listen to events emitted by Orchard.
+
 ```js
 cache.on('cache:hit', console.log);
 ```
