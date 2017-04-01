@@ -118,7 +118,7 @@ Returns a `Promise` that resolves to the number of removed keys. If the last cha
 cache.on('cache:hit', console.log);
 ```
 
-The cache instance is also an [event emitter](http://nodejs.org/api/events.html#events_class_events_eventemitter) which provides an `on` method against which the implementing application can listen events. `eventName` is a `String` corresponding to a supported event. `eventListener` is a callback function invoked each time the event is triggered.
+The cache instance is also an [event emitter](http://nodejs.org/api/events.html#events_class_events_eventemitter). `eventName` is a `String` corresponding to a supported event. `eventListener` is a callback function invoked each time the event is triggered.
 
 #### `cache:hit`
 
