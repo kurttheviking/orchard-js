@@ -8,8 +8,8 @@ Read-through, fail-through, Redis-backed caching
 
 ### Prerequisites
 
-- Node.js 4.x (LTS), or newer
-- Redis 2.8, or newer
+- Node.js 4.x (LTS) or newer
+- Redis 2.8 or newer
 
 For local development, consider [Docker](https://www.docker.com/) for managing your Redis installation. First install the image:
 
