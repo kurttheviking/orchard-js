@@ -1,4 +1,4 @@
-## 2.0.0 (Mar 28, 2017)
+## 2.0.0 (Apr 1, 2017)
 
 - [breaking] Removed key-level cache options
 - [breaking] Removed ability to disable fail-through
