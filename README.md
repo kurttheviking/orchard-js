@@ -110,7 +110,7 @@ const orchard = new Orchard(options);
 orchard.del(key).then(console.log);
 ```
 
-Returns a `Promise` that resolves to the number of removed keys. If the last character of the `key` is an asterisk (`*`), the key is treated as a pattern to use with Redis' [`SCAN` and `MATCH` commands](https://redis.io/commands/scan).
+Returns a `Promise` that resolves to the number of removed keys. If the last character of the resolved `key` is an asterisk (`*`), the key is treated as a pattern to use with Redis' [`SCAN` and `MATCH` commands](https://redis.io/commands/scan).
 
 ### `cache#on(eventName, eventListener)`
 
