@@ -96,7 +96,7 @@ Attempts to get the current value of `key` from the cache. If the key does not e
 - a `Function` that returns a [JSON-stringify](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify)-able `Object`
 - a `Function` that returns a `Promise` that resolves to a [JSON-stringify](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify)-able `Object`
 
-The promise is rejected if there is an error resolving the `primingFunction`. Rejected cache calls are not persisted.
+The `Promise` is rejected if there is an error resolving the `primingFunction`. Rejected cache calls are not persisted.
 
 **Warning:** The `key` resolution process does not have the same stampede protections as the priming function. Instead, if `key` is a `Function`, it is invoked on every cache call. If you plan to remotely resolve the key you may want to consider caching the `key` function as well.
 
@@ -110,7 +110,7 @@ const orchard = new Orchard(options);
 orchard.del(key).then(console.log);
 ```
 
-Returns a promise that resolves to the number of removed keys after deleting `key` from the database. If the last character of the resolved `key` is an asterisk (`*`), the key is treated as a pattern to use with Redis' [`SCAN` and `MATCH` commands](https://redis.io/commands/scan).
+Returns a `Promise` that resolves to the number of removed keys after deleting `key` from the database. If the last character of the resolved `key` is an asterisk (`*`), the key is treated as a pattern to use with Redis' [`SCAN` and `MATCH` commands](https://redis.io/commands/scan).
 
 ### `cache#on(eventName, eventListener)`
 
