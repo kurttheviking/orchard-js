@@ -7,7 +7,7 @@
     "coverage": "./node_modules/istanbul/lib/cli.js cover --report=json-summary --report=html _mocha ./test/unit -- --recursive",
     "coveralls": "istanbul cover ./node_modules/mocha/bin/_mocha --report lcovonly ./test/unit -- --recursive -R spec && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
     "test": "node node_modules/mocha/bin/mocha ./test --recursive",
-    "test-live": "node node_modules/mocha/bin/mocha ./test/live --recursive",
+    "test-integrated": "node node_modules/mocha/bin/mocha ./test-integrated --recursive",
     "test-unit": "node node_modules/mocha/bin/mocha ./test/unit --recursive"
   },
   "engines": {

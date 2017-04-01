@@ -206,7 +206,7 @@ describe('Orchard, database disconnect', () => {
     });
   });
 
-  it('invokes the priming function on every call', () => {
+  it('invokes the priming function on every request', () => {
     const orchard = new Orchard();
 
     const key = uuid.v4();
