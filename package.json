@@ -1,7 +1,7 @@
 {
   "name": "orchard",
   "version": "1.2.0",
-  "description": "Functional, Redis-backed read-through caching",
+  "description": "Read-through, fail-through, Redis-backed caching",
   "main": "index.js",
   "scripts": {
     "coverage": "./node_modules/istanbul/lib/cli.js cover --report=json-summary --report=html _mocha ./test/unit -- --recursive",
