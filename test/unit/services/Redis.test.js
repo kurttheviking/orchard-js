@@ -26,10 +26,10 @@ describe('services/Redis', () => {
       createClient: sinon.stub().returns({
         on: clientOn,
         del: () => null,
-        expire: () => null,
         get: () => null,
         scan: () => null,
-        set: () => null
+        set: () => null,
+        setex: () => null
       })
     };
 
@@ -75,13 +75,6 @@ describe('services/Redis', () => {
     expect(client.del).to.be.a('function');
   });
 
-  it('Redis#expire is a function', () => {
-    const client = new Client(uuid.v4());
-
-    expect(client).to.have.property('expire');
-    expect(client.expire).to.be.a('function');
-  });
-
   it('Redis#get is a function', () => {
     const client = new Client(uuid.v4());
 
@@ -101,6 +94,13 @@ describe('services/Redis', () => {
 
     expect(client).to.have.property('set');
     expect(client.set).to.be.a('function');
+  });
+
+  it('Redis#setex is a function', () => {
+    const client = new Client(uuid.v4());
+
+    expect(client).to.have.property('setex');
+    expect(client.setex).to.be.a('function');
   });
 
   [

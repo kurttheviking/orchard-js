@@ -71,7 +71,7 @@ Notes:
 - `herdCacheParams`: To mitigate [thundering herd risks](https://en.wikipedia.org/wiki/Thundering_herd_problem), Orchard holds a `key` in memory while initially resolving the priming value; subsequent calls using the same `key` (within the same process) receive the same `Promise` until the value is resolved. This temporary cache is pruned to avoid unnecessary memory consumption.
 - `ttl`: Redis uses [seconds for expiration timers](https://redis.io/commands/expire); Orchard converts `ttl` from milliseconds to seconds, rounding down.
 
-### `orchard(key, primingFunction)`
+### `orchard(key, primingFunction[, options])`
 
 Retrieve data from the Orchard cache, invoking the priming function to prime the cache.
 
@@ -100,6 +100,12 @@ Returns a `Promise` that resolves to the final value of the `primingFunction`. I
 The `Promise` is rejected if there is an error resolving the `primingFunction`. Rejected cache calls are not persisted.
 
 **Warning:** The `key` resolution process does not have the same stampede protections as the priming function. Instead, if `key` is a `Function`, it is invoked on every cache call. If you plan to remotely resolve the key you may want to consider caching the `key` function as well.
+
+#### Options
+
+| Option | Type | Description | Default |
+| :----- | :--- | :---------- | :------ |
+| `force` | `Boolean` | If `true`, ignore current cached value and overwrite with new value | `false` |
 
 ### `cache#del(key)`
 

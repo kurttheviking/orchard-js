@@ -26,11 +26,11 @@ describe('Orchard', () => {
     hitSpy.reset();
     missSpy.reset();
 
-    orchard.del(`${PREFIX}*`);
+    orchard.del('*');
   });
 
-  beforeEach(() => {
-    orchard.del(`${PREFIX}*`);
+  afterEach(() => {
+    orchard.del('*');
   });
 
   it('resolves to an input value', () => {
@@ -93,6 +93,38 @@ describe('Orchard', () => {
   });
 });
 
+describe('Orchard, with a ttl', () => {
+  const Orchard = require('../index');
+
+  const orchard = new Orchard({ prefix: PREFIX, ttl: '1h' });
+
+  beforeEach(() => {
+    orchard.del('*');
+  });
+
+  afterEach(() => {
+    orchard.del('*');
+  });
+
+  it('resolves to an input value', () => {
+    const value = [uuid.v4(), uuid.v4()];
+
+    return orchard(uuid.v4(), value).then((out) => {
+      expect(out).to.deep.equal(value);
+    });
+  });
+
+  it('invokes the priming function once per key', () => {
+    const key = uuid.v4();
+    const value = sinon.stub().returns([uuid.v4(), uuid.v4()]);
+
+    return orchard(key, value).then(() => orchard(key, value))
+    .then(() => {
+      expect(value.callCount).to.equal(1);
+    });
+  });
+});
+
 describe('Orchard, no live database', () => {
   const Orchard = require('../index');
 
@@ -103,11 +135,11 @@ describe('Orchard, no live database', () => {
   orchard.on('redis:error', errorSpy);
 
   beforeEach(() => {
-    orchard.del(`${PREFIX}*`);
+    orchard.del('*');
   });
 
-  beforeEach(() => {
-    orchard.del(`${PREFIX}*`);
+  afterEach(() => {
+    orchard.del('*');
   });
 
   it('resolves to an input value', () => {

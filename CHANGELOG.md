@@ -1,3 +1,8 @@
+## 2.1.0 (Apr 2, 2017)
+
+- [minor] Add support for invocation-level option: force (ignores current value
+  )
+
 ## 2.0.0 (Apr 1, 2017)
 
 - [breaking] Removed key-level cache options

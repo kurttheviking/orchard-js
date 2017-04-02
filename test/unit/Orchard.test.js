@@ -29,10 +29,10 @@ describe('Orchard', () => {
       redisClient = createClient.call(redis, params);
 
       sinon.spy(redisClient, 'del');
-      sinon.spy(redisClient, 'expire');
       sinon.spy(redisClient, 'get');
       sinon.spy(redisClient, 'scan');
       sinon.spy(redisClient, 'set');
+      sinon.spy(redisClient, 'setex');
 
       return redisClient;
     };
@@ -75,6 +75,19 @@ describe('Orchard', () => {
     });
   });
 
+  it('invokes the priming function on all calls with "force" = true', () => {
+    const orchard = new Orchard();
+
+    const key = uuid.v4();
+    const opts = { force: true };
+    const value = sinon.stub().returns([uuid.v4(), uuid.v4()]);
+
+    return orchard(key, value, opts).then(() => orchard(key, value, opts))
+    .then(() => {
+      expect(value.callCount).to.equal(2);
+    });
+  });
+
   it('does not apply a default ttl', () => {
     const orchard = new Orchard();
 
@@ -82,7 +95,7 @@ describe('Orchard', () => {
     const value = [uuid.v4(), uuid.v4()];
 
     return orchard(key, value).then(() => {
-      expect(redisClient.expire.callCount).to.equal(0);
+      expect(redisClient.setex.callCount).to.equal(0);
     });
   });
 
@@ -142,9 +155,9 @@ describe('Orchard', () => {
     const value = [uuid.v4(), uuid.v4()];
 
     return orchard(key, value).then(() => {
-      expect(redisClient.expire.callCount).to.equal(1);
+      expect(redisClient.setex.callCount).to.equal(1);
 
-      const args = redisClient.expire.getCall(0).args;
+      const args = redisClient.setex.getCall(0).args;
 
       expect(args[0]).to.equal(key);
       expect(args[1]).to.equal(3600);
@@ -263,45 +276,6 @@ describe('Orchard, database error', () => {
     return orchard(key, value).then(() => orchard(key, value))
     .then(() => {
       expect(value.callCount).to.equal(2);
-    });
-  });
-});
-
-describe('Orchard, ttl error', () => {
-  let Orchard;
-  let Redis;
-
-  beforeEach(() => {
-    mockery.enable({
-      warnOnReplace: false,
-      warnOnUnregistered: false,
-      useCleanCache: true
-    });
-
-    Redis = sinon.stub().returns({
-      on: (evt, cb) => { if (evt === 'ready') { cb(); } },
-      get: sinon.stub().returns(Promise.resolve(null)),
-      set: sinon.stub().returns(Promise.resolve(null)),
-      expire: sinon.stub().returns(Promise.reject(new Error('fail')))
-    });
-
-    mockery.registerMock('./services/Redis', Redis);
-
-    Orchard = require('../../index');
-  });
-
-  afterEach(() => {
-    mockery.deregisterAll();
-    mockery.disable();
-  });
-
-  it('resolves to an input value', () => {
-    const orchard = new Orchard({ ttl: '1d' });
-
-    const value = [uuid.v4(), uuid.v4()];
-
-    return orchard(uuid.v4(), value).then((out) => {
-      expect(out).to.deep.equal(value);
     });
   });
 });
