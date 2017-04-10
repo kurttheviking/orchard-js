@@ -148,11 +148,28 @@ describe('Orchard', () => {
 
       const hashArgs = keyHash.getCall(0).args;
 
-      expect(hashArgs[0]).to.equal(`${key}`);
+      expect(hashArgs[0]).to.equal(key);
 
       const getArgs = redisClient.set.getCall(0).args;
 
-      expect(getArgs[0]).to.equal(`${keyHashResult}`);
+      expect(getArgs[0]).to.equal(keyHashResult);
+    });
+  });
+
+  it('when "keyHash" option used, priming function receives raw key', () => {
+    const key = uuid.v4();
+    const keyHashResult = uuid.v4();
+
+    const keyHash = sinon.stub().returns(Promise.resolve(keyHashResult));
+
+    const orchard = new Orchard({ keyHash });
+
+    const value = sinon.stub().returns([uuid.v4(), uuid.v4()]);
+
+    return orchard(key, value).then(() => {
+      const args = value.getCall(0).args;
+
+      expect(args[0]).to.equal(key);
     });
   });
 
@@ -168,6 +185,21 @@ describe('Orchard', () => {
       const args = redisClient.set.getCall(0).args;
 
       expect(args[0]).to.equal(`${prefix}:${key}`);
+    });
+  });
+
+  it('when "prefix" option used, priming function receives raw key', () => {
+    const prefix = uuid.v4();
+
+    const orchard = new Orchard({ prefix });
+
+    const key = uuid.v4();
+    const value = sinon.stub().returns([uuid.v4(), uuid.v4()]);
+
+    return orchard(key, value).then(() => {
+      const args = value.getCall(0).args;
+
+      expect(args[0]).to.equal(key);
     });
   });
 

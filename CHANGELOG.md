@@ -1,3 +1,7 @@
+## 3.0.0 (Apr 10, 2017)
+
+- [breaking] Priming function receives pre-hash, pre-prefix resolved key
+
 ## 2.2.0 (Apr 10, 2017)
 
 - [minor] Add support for key hashing function (`#keyHash`)
