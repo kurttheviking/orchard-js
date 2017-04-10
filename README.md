@@ -70,7 +70,7 @@ const orchard = new Orchard(options);
 Notes:
 
 - `herdCacheParams`: To mitigate [thundering herd risks](https://en.wikipedia.org/wiki/Thundering_herd_problem), Orchard holds a `key` in memory while initially resolving the priming value; subsequent calls using the same `key` (within the same process) receive the same `Promise` until the value is resolved. This temporary cache is pruned to avoid unnecessary memory consumption.
-- `keyHash`: This function is invoked with the resolved key and should resolve to (or return) a [deterministically hashed digest](https://nodejs.org/api/crypto.html#crypto_crypto_createhash_algorithm) of the input. By providing a hashing function at instantiation, applications can avoid hashing sensitive keys at every Orchard call-site.
+- `keyHash`: This function is invoked with the resolved key and should resolve to (or return) a [deterministically hashed digest](https://nodejs.org/api/crypto.html#crypto_crypto_createhash_algorithm) of the input. (e.g. `function keyHash(key) { return makeDigest(key); }`) By providing a hashing function at instantiation, applications can avoid hashing sensitive keys at every Orchard call-site.
 - `ttl`: Redis uses [seconds for expiration timers](https://redis.io/commands/expire); Orchard converts `ttl` from milliseconds to seconds, rounding down.
 
 ### `orchard(key, primingFunction[, options])`
