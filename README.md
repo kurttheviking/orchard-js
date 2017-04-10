@@ -61,6 +61,7 @@ const orchard = new Orchard(options);
 | Option | Type | Description | Default |
 | :----- | :--- | :---------- | :------ |
 | `herdCacheParams` | `Object` | Parameters passed to the internal, [in-memory LRU cache](https://www.npmjs.com/package/lru-cache) | `{ max: 1024, maxAge: 60000 }` |
+| `keyHash` | `Function` | Hashing function applied to resolved keys (prior to prefixing) | *None* |
 | `prefix` | `String` | Prepended to resolved cache keys; use if a single database supports multiple caching services | *None* |
 | `scanCount` | `Number` | Hints Redis' `SCAN` command during keyspace enumeration (e.g. with delete) | `10` |
 | `ttl` | `String` or `Number` | Sets expiration for a cached value, a `Number` is treated as milliseconds and a `String` is treated as an [`ms` duration](https://www.npmjs.com/package/ms) | *None* |
@@ -69,6 +70,7 @@ const orchard = new Orchard(options);
 Notes:
 
 - `herdCacheParams`: To mitigate [thundering herd risks](https://en.wikipedia.org/wiki/Thundering_herd_problem), Orchard holds a `key` in memory while initially resolving the priming value; subsequent calls using the same `key` (within the same process) receive the same `Promise` until the value is resolved. This temporary cache is pruned to avoid unnecessary memory consumption.
+- `keyHash`: This function is invoked with the resolved key and should resolve (or return) to a [deterministically hashed digest](https://nodejs.org/api/crypto.html#crypto_crypto_createhash_algorithm) of the input. Providing this hashing function at instantiation avoids needing to hash sensitive keys at every Orchard call-site.
 - `ttl`: Redis uses [seconds for expiration timers](https://redis.io/commands/expire); Orchard converts `ttl` from milliseconds to seconds, rounding down.
 
 ### `orchard(key, primingFunction[, options])`

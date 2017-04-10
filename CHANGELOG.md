@@ -1,3 +1,7 @@
+## 2.2.0 (Apr 10, 2017)
+
+- [minor] Add support for key hashing function (`#keyHash`)
+
 ## 2.1.0 (Apr 2, 2017)
 
 - [minor] Add support for invocation-level option: force (ignores current value

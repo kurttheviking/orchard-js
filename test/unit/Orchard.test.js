@@ -133,6 +133,29 @@ describe('Orchard', () => {
     });
   });
 
+  it('supports a "keyHash" option', () => {
+    const key = uuid.v4();
+    const keyHashResult = uuid.v4();
+
+    const keyHash = sinon.stub().returns(Promise.resolve(keyHashResult));
+
+    const orchard = new Orchard({ keyHash });
+
+    const value = [uuid.v4(), uuid.v4()];
+
+    return orchard(key, value).then(() => {
+      expect(keyHash.callCount).to.equal(1);
+
+      const hashArgs = keyHash.getCall(0).args;
+
+      expect(hashArgs[0]).to.equal(`${key}`);
+
+      const getArgs = redisClient.set.getCall(0).args;
+
+      expect(getArgs[0]).to.equal(`${keyHashResult}`);
+    });
+  });
+
   it('supports a "prefix" option', () => {
     const prefix = uuid.v4();
 
