@@ -34,24 +34,24 @@
   },
   "homepage": "https://github.com/kurttheviking/orchard-js#readme",
   "dependencies": {
-    "debug": "2.6.3",
+    "debug": "3.1.0",
     "es6-promisify": "5.0.0",
-    "lru-cache": "4.0.2",
-    "ms": "1.0.0",
-    "redis": "2.7.1",
-    "uuid-with-v6": "1.0.2"
+    "lru-cache": "4.1.1",
+    "ms": "2.0.0",
+    "redis": "2.8.0",
+    "uuid-with-v6": "1.1.2"
   },
   "devDependencies": {
-    "chai": "3.5.0",
+    "chai": "4.1.2",
     "coveralls": "2.12.0",
     "eslint": "3.9.1",
     "eslint-config-airbnb-base": "10.0.1",
     "eslint-plugin-import": "2.2.0",
     "fakeredis": "2.0.0",
     "istanbul": "0.4.5",
-    "mocha": "3.1.2",
+    "mocha": "3.5.3",
     "mocha-eslint": "3.0.1",
-    "mockery": "2.0.0",
-    "sinon": "1.17.7"
+    "mockery": "2.1.0",
+    "sinon": "4.0.0"
   }
 }
